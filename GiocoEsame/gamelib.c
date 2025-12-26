@@ -163,7 +163,7 @@ static int lanciaD20()
     return rand() % 20 + 1;
 }
 
-static void sceltaAttributi(Giocatore *giocatore)
+static void scelta_attributi(Giocatore *giocatore)
 {
     char scelta[2];
     printf("Fai la tua scelta (ATTENZIONE le statistiche non possono superare 20 o diminuire più di 1): ");
@@ -172,7 +172,7 @@ static void sceltaAttributi(Giocatore *giocatore)
     if (scelta[1] < 1 || scelta[1] > 4 || (scelta[1] == 4 && esisteVirgola))
     {
         printf("Scelta non valida. Riprova.\n");
-        sceltaAttributi(giocatore); // Ripeti il turno per lo stesso giocatore
+        scelta_attributi(giocatore); // Ripeti il turno per lo stesso giocatore
     }
     else
     {
@@ -207,7 +207,7 @@ static void sceltaAttributi(Giocatore *giocatore)
             // Nessuna modifica
             break;
         case 4:
-            if (giocatore->attacco_psichico + 4 > 20)
+            if (giocatore->attacco_psichico + 4 > 20 || giocatore->difesa_psichica)
                 giocatore->attacco_psichico += 4;
             giocatore->difesa_psichica += 4;
             giocatore->fortuna -= 7;
@@ -215,6 +215,44 @@ static void sceltaAttributi(Giocatore *giocatore)
             esisteVirgola = 1;
             break;
         }
+    }
+}
+
+static void scelta_mappa()
+{
+    printf("Inserisci la tua scelta: ");
+    char scelta[2];
+    fgets(&scelta, sizeof(scelta), stdin);
+
+    if (scelta[1] < 1 || scelta[1] > 6)
+    {
+        printf("Scelta non valida. riprova.\n");
+        scelta_mappa();
+    }
+
+    switch (scelta[1])
+    {
+    case 1:
+        crea_mappa();
+        break;
+    case 2:
+        inserisci_zona(0); // da implementare
+
+        break;
+    case 3:
+        cancella_zona(0); // da implementare
+        break;
+    case 4:
+        stampa_mappa();
+        break;
+    case 5:
+        stampa_zona();
+        break;
+    case 6:
+        chiudi_mappa();
+        break;
+    default:
+        break;
     }
 }
 
@@ -259,15 +297,17 @@ void imposta_Gioco()
                 printf("4)Diventa UndiciVirgolaCinque (attacco_psichico e difesa_psichica +4, fortuna -7).\n");
                 printf("Attenzione: il tuo nome verra cambiano in UndiciVirgolaCinque e solo un giocatore per partita può fare questa scelta.\n");
             }
-            sceltaAttributi(&(giocatori[i]));
+            scelta_attributi(&(giocatori[i]));
         }
     }
 
     printf("Ora può scegliere come creare la mappa di gioco:\n");
-    printf("1)Genera mappa in maniera casuale.\n");
-    printf("2)Inserisci zona, in una posizione dettata del game master.\n");
-    printf("3)Cancella zona, in una posizione dettata del game master.\n");
-    printf("4)Stampa la mappa");
-    printf("5)Stampa zona singola (sia del mondo reale che soprasotto), a piacere del game master");
-    
+    printf("1)Genera mappa in maniera casuale\n");
+    printf("2)Inserisci zona, in una posizione dettata del game master\n");
+    printf("3)Cancella zona, in una posizione dettata del game master\n");
+    printf("4)Stampa la mappa\n");
+    printf("5)Stampa zona singola (sia del mondo reale che soprasotto), a piacere del game master\n");
+    printf("6)Esci dalla creazione della mappa\n");
+
+    scelta_mappa();
 }
