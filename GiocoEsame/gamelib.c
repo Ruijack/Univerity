@@ -15,12 +15,12 @@ static int esisteDemotorzone = 0;
 static Mondoreale *prima_zona_mondoreale;
 static Soprasotto *prima_zona_soprasotto;
 static int numZone = 0;
+static int tipi_nemici = 4;
 
 // ritorna un numero casuale tra 0 e 4 eccetto l'eccezione
 static int rand_exept(int eccezione)
 {
     int r;
-    static int tipi_nemici = 4;
     do
     {
         r = rand() % tipi_nemici;
@@ -109,7 +109,7 @@ static void stampa_mappa()
     char scelta[2];
     printf("Quale mappa, mondo reale(1) o soprasotto(2)?");
     fgets(&scelta, sizeof(scelta), stdin);
-    if (scelta[1] < 1 || scelta[1] > 2)
+    if (scelta[1] != 1 || scelta[1] != 2)
     {
         printf("Scelta non valida. Riprova.\n");
         stampa_mappa();
@@ -250,8 +250,6 @@ static void scelta_mappa()
         break;
     case 6:
         chiudi_mappa();
-        break;
-    default:
         break;
     }
 }
