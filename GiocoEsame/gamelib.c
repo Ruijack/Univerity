@@ -15,21 +15,21 @@ static int esisteDemotorzone = 0;
 static Mondoreale *prima_zona_mondoreale;
 static Soprasotto *prima_zona_soprasotto;
 static int numZone = 0;
-static int tipi_nemici = 4;
+static int tipiNemici = 4;
 
-// ritorna un numero casuale tra 0 e 4 eccetto l'eccezione
+// ritorna un numero casuale tra 0 e 4 eccetto l'intero inserito
 static int rand_exept(int eccezione)
 {
     int r;
     do
     {
-        r = rand() % tipi_nemici;
+        r = rand() % tipiNemici;
     } while (r == eccezione);
 
     if (r == 3)
     {
         esisteDemotorzone = 1;
-        tipi_nemici = 3;
+        tipiNemici = 3;
     }
     return r;
 }
@@ -54,7 +54,7 @@ static void crea_zona_fine()
 
     nuova_zona_soprasotto->tipo = nuova_zona_reale->tipo;
     nuova_zona_soprasotto->link_mondoreale = nuova_zona_reale;
-    nuova_zona_reale->nemico = rand_exept(1);
+    nuova_zona_soprasotto->nemico = rand_exept(1);
     nuova_zona_soprasotto->avanti = prima_zona_soprasotto;
     nuova_zona_soprasotto->indietro = ultima_zona_soprasotto;
 
@@ -121,30 +121,30 @@ static void stampa_mappa()
         case 1:
             int i = 0;
             printf("Mappa del mondo reale");
-            Mondoreale *pScan = prima_zona_mondoreale;
+            Mondoreale *pScan_reale = prima_zona_mondoreale;
             do
             {
                 printf("Zona %d", i);
-                printf("Tipo: %d\n", pScan->tipo);
-                printf("Nemico: %d\n", pScan->nemico);
-                printf("Oggetto: %d\n", pScan->oggetto);
-                pScan = pScan->avanti;
+                printf("Tipo: %d\n", pScan_reale->tipo);
+                printf("Nemico: %d\n", pScan_reale->nemico);
+                printf("Oggetto: %d\n", pScan_reale->oggetto);
+                pScan_reale = pScan_reale->avanti;
                 i++;
-            } while (pScan != prima_zona_mondoreale);
+            } while (pScan_reale != prima_zona_mondoreale);
             break;
 
         case 2:
             int i = 0;
             printf("Mappa del soprasotto");
-            Soprasotto *pScan = prima_zona_soprasotto;
+            Soprasotto *pScan_sotto = prima_zona_soprasotto;
             do
             {
                 printf("Zona %d", i);
-                printf("Tipo: %d\n", pScan->tipo);
-                printf("Nemico: %d\n", pScan->nemico);
-                pScan = pScan->avanti;
+                printf("Tipo: %d\n", pScan_sotto->tipo);
+                printf("Nemico: %d\n", pScan_sotto->nemico);
+                pScan_sotto = pScan_sotto->avanti;
                 i++;
-            } while (pScan != prima_zona_soprasotto);
+            } while (pScan_sotto != prima_zona_soprasotto);
             break;
         }
     }
