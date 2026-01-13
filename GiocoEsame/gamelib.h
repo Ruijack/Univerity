@@ -23,8 +23,6 @@ struct Zona_mondoreale {
     struct Zona_soprasotto* link_soprasotto;
 };
 
-
-
 struct Giocatore {
     char nome[50];
     short mondo; // 0 = mondoreale, 1 = soprasotto
@@ -35,3 +33,7 @@ struct Giocatore {
     int fortuna;
     enum Tipo_oggetto zaino[3];
 };
+
+void imposta_gioco();
+void gioca();
+void crediti();

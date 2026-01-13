@@ -16,6 +16,9 @@ static Mondoreale *prima_zona_mondoreale;
 static Soprasotto *prima_zona_soprasotto;
 static int numZone = 0;
 static int tipiNemici = 4;
+static Giocatore *giocatori;
+
+static void scelta_mappa();
 
 // ritorna un numero casuale tra 0 e 4 eccetto l'intero inserito
 static int rand_exept(int eccezione)
@@ -94,6 +97,7 @@ static void crea_mappa()
     {
         crea_zona_fine();
     }
+    scelta_mappa();
 }
 
 static void inserisci_zona(int posto)
@@ -106,25 +110,30 @@ static void cancella_zona(int posto)
 
 static void stampa_mappa()
 {
-    char scelta[2];
-    printf("Quale mappa, mondo reale(1) o soprasotto(2)?");
-    fgets(&scelta, sizeof(scelta), stdin);
-    if (scelta[1] != 1 || scelta[1] != 2)
+    char scelta[4];
+    long sceltaInt;
+    printf("Quale mappa, mondo reale(1) o soprasotto(2)?: ");
+    fgets(scelta, sizeof(scelta), stdin);
+    sceltaInt = strtol(scelta, NULL, 10);
+
+    if (sceltaInt != 1 && sceltaInt != 2)
     {
         printf("Scelta non valida. Riprova.\n");
         stampa_mappa();
     }
     else
     {
-        switch (scelta[1])
+        int i = 0;
+
+        switch (sceltaInt)
         {
         case 1:
-            int i = 0;
-            printf("Mappa del mondo reale");
+
+            printf("Mappa del mondo reale\n");
             Mondoreale *pScan_reale = prima_zona_mondoreale;
             do
             {
-                printf("Zona %d", i);
+                printf("Zona %d\n", i);
                 printf("Tipo: %d\n", pScan_reale->tipo);
                 printf("Nemico: %d\n", pScan_reale->nemico);
                 printf("Oggetto: %d\n", pScan_reale->oggetto);
@@ -134,12 +143,11 @@ static void stampa_mappa()
             break;
 
         case 2:
-            int i = 0;
-            printf("Mappa del soprasotto");
+            printf("Mappa del soprasotto\n");
             Soprasotto *pScan_sotto = prima_zona_soprasotto;
             do
             {
-                printf("Zona %d", i);
+                printf("Zona %d\n", i);
                 printf("Tipo: %d\n", pScan_sotto->tipo);
                 printf("Nemico: %d\n", pScan_sotto->nemico);
                 pScan_sotto = pScan_sotto->avanti;
@@ -148,6 +156,8 @@ static void stampa_mappa()
             break;
         }
     }
+
+    scelta_mappa();
 }
 
 static void stampa_zona()
@@ -165,52 +175,70 @@ static int lanciaD20()
 
 static void scelta_attributi(Giocatore *giocatore)
 {
-    char scelta[2];
-    printf("Fai la tua scelta (ATTENZIONE le statistiche non possono superare 20 o diminuire più di 1): ");
+    char scelta[4];
+    long sceltaInt;
+    printf("Fai la tua scelta: ");
     fgets(scelta, sizeof(scelta), stdin);
+    sceltaInt = strtol(scelta, NULL, 10);
 
-    if (scelta[1] < 1 || scelta[1] > 4 || (scelta[1] == 4 && esisteVirgola))
+    if (sceltaInt < 1 || sceltaInt > 4 || (sceltaInt == 4 && esisteVirgola))
     {
         printf("Scelta non valida. Riprova.\n");
         scelta_attributi(giocatore); // Ripeti il turno per lo stesso giocatore
     }
     else
     {
-        switch (scelta[1])
+        switch (sceltaInt)
         {
         case 1:
-            if (giocatore->attacco_psichico + 3 > 20 || giocatore->difesa_psichica - 3 < 1)
+            giocatore->attacco_psichico += 3;
+            giocatore->difesa_psichica -= 3;
+            if (giocatore->attacco_psichico > 20)
             {
-                printf("Scelta non valida. riprova.\n");
-                sceltaAttributi(giocatore);
-            }
-            else
-            {
-                giocatore->attacco_psichico += 3;
-                giocatore->difesa_psichica -= 3;
+                giocatore->attacco_psichico = 20;
             }
 
+            if (giocatore->difesa_psichica < 1)
+            {
+                giocatore->difesa_psichica = 1;
+            }
             break;
         case 2:
-            if (giocatore->attacco_psichico - 3 < 0 || giocatore->difesa_psichica + 3 > 20)
+
+            giocatore->difesa_psichica += 3;
+            giocatore->attacco_psichico -= 3;
+            if (giocatore->attacco_psichico < 0)
             {
-                printf("Scelta non valida. riprova.\n");
-                sceltaAttributi(giocatore);
+                giocatore->attacco_psichico = 1;
             }
-            else
+
+            if (giocatore->difesa_psichica > 20)
             {
-                giocatore->difesa_psichica += 3;
-                giocatore->attacco_psichico -= 3;
+                giocatore->difesa_psichica = 20;
             }
+
             break;
         case 3:
             // Nessuna modifica
             break;
         case 4:
-            if (giocatore->attacco_psichico + 4 > 20 || giocatore->difesa_psichica)
-                giocatore->attacco_psichico += 4;
+            giocatore->attacco_psichico += 4;
             giocatore->difesa_psichica += 4;
             giocatore->fortuna -= 7;
+
+            if (giocatore->attacco_psichico > 20)
+            {
+                giocatore->attacco_psichico = 20;
+            }
+            if (giocatore->difesa_psichica > 20)
+            {
+                giocatore->difesa_psichica = 20;
+            }
+            if (giocatore->fortuna < 1)
+            {
+                giocatore->fortuna = 1;
+            }
+
             strcpy(giocatore->nome, "UndiciVirgolaCinque");
             esisteVirgola = 1;
             break;
@@ -220,17 +248,27 @@ static void scelta_attributi(Giocatore *giocatore)
 
 static void scelta_mappa()
 {
+    printf("Ora può scegliere come creare la mappa di gioco:\n");
+    printf("1)Genera mappa in maniera casuale\n");
+    printf("2)Inserisci zona, in una posizione dettata del game master\n");
+    printf("3)Cancella zona, in una posizione dettata del game master\n");
+    printf("4)Stampa la mappa\n");
+    printf("5)Stampa zona singola (sia del mondo reale che soprasotto), a piacere del game master\n");
+    printf("6)Esci dalla creazione della mappa\n");
     printf("Inserisci la tua scelta: ");
-    char scelta[2];
-    fgets(&scelta, sizeof(scelta), stdin);
 
-    if (scelta[1] < 1 || scelta[1] > 6)
+    char scelta[4];
+    long sceltaInt;
+    fgets(scelta, sizeof(scelta), stdin);
+    sceltaInt = strtol(scelta, NULL, 10);
+
+    if (sceltaInt < 1 || sceltaInt > 6)
     {
         printf("Scelta non valida. riprova.\n");
         scelta_mappa();
     }
 
-    switch (scelta[1])
+    switch (sceltaInt)
     {
     case 1:
         crea_mappa();
@@ -254,22 +292,25 @@ static void scelta_mappa()
     }
 }
 
-void imposta_Gioco()
+void imposta_gioco()
 {
     printf("Inserire il numero di giocatori (max 4): ");
 
-    char num_giocatori[2];
+    char num_giocatori[4];
+    long num_giocatoriInt;
     fgets(num_giocatori, sizeof(num_giocatori), stdin);
-    if (num_giocatori[1] < 1 || num_giocatori[1] > 4)
+    num_giocatoriInt = strtol(num_giocatori, NULL, 10);
+
+    if (num_giocatoriInt < 1 || num_giocatoriInt > 4)
     {
         printf("Numero di giocatori non valido. Riprova.\n");
-        imposta_Gioco();
+        imposta_gioco();
     }
     else
     {
-        Giocatore *giocatori = (Giocatore *)calloc(4, sizeof(Giocatore));
+        giocatori = (Giocatore *)calloc(4, sizeof(Giocatore));
 
-        for (int i = 0; i < num_giocatori[1]; i++)
+        for (int i = 0; i < num_giocatoriInt; i++)
         {
             printf("Inserire il nome del giocatore %d (Max 50 caratteri): ", i + 1);
             fgets(giocatori[i].nome, sizeof(giocatori[i].nome), stdin);
@@ -285,7 +326,8 @@ void imposta_Gioco()
             printf("La tua difesa psichica è: %d\n", giocatori[i].difesa_psichica);
             printf("La tua fortuna è: %d\n)", giocatori[i].fortuna);
 
-            printf("Puoi anche scegliere tra:\n");
+            printf("Puoi anche scegliere tra questi modificatori:\n");
+            printf("(ATTENZIONE ogni statistica non puo' scendere sotto a 1 o superare 20)\n");
             printf("1)Attacco_psichico +3 punti e difesa_psichica -3 punti.\n");
             printf("2)Difesa_psichica +3 punti e attacco_psichico -3 punti.\n");
             printf("3)Sto bene così.\n");
@@ -299,13 +341,10 @@ void imposta_Gioco()
         }
     }
 
-    printf("Ora può scegliere come creare la mappa di gioco:\n");
-    printf("1)Genera mappa in maniera casuale\n");
-    printf("2)Inserisci zona, in una posizione dettata del game master\n");
-    printf("3)Cancella zona, in una posizione dettata del game master\n");
-    printf("4)Stampa la mappa\n");
-    printf("5)Stampa zona singola (sia del mondo reale che soprasotto), a piacere del game master\n");
-    printf("6)Esci dalla creazione della mappa\n");
-
     scelta_mappa();
+}
+
+void gioca()
+{
+    // Implementazione della funzione gioca
 }

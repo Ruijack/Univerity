@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include "gamelib.h"
 
 int main()
 {
@@ -8,7 +9,9 @@ int main()
     srand((unsigned)time(&t));
     // printf("Benvenuto giocatore!\n");
     // printf("Sarai pronto per affrontare l'avventura in Occhinz?\n");
-    char scelta[2];
+    char scelta[4];
+    long sceltaInt;
+
     do
     {
         printf("      CoseStrane\n");
@@ -17,14 +20,15 @@ int main()
         printf("3)Esci\n");
         printf("4)Crediti\n");
         printf("Inserisci il comando: ");
-
         int giocoImpostato = 0;
+        printf("Inserisci il comando: ");
         fgets(scelta, sizeof(scelta), stdin);
 
-        switch (scelta[1])
+        sceltaInt = strtol(scelta, NULL, 10);
+        switch (sceltaInt)
         {
         case 1:
-            imposta_Gioco();
+            imposta_gioco();
             giocoImpostato = 1;
             break;
         case 2:
@@ -47,7 +51,7 @@ int main()
             printf("Scelta non valida, inserire un comando valido.\n");
             break;
         }
-    } while (scelta[1] != 3);
+    } while (sceltaInt != 3);
 
     return 0;
 }
