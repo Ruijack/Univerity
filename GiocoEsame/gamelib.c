@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "gamelib.h"
 
 typedef struct Giocatore Giocatore;
@@ -16,24 +17,41 @@ static Mondoreale *prima_zona_mondoreale;
 static Soprasotto *prima_zona_soprasotto;
 static int numZone = 0;
 static int tipiNemici = 4;
+static const int tipiZone = 10;
+static const int tipiOggetti = 5;
 static Giocatore *giocatori;
 
 static void scelta_mappa();
+static void cancella_mappa();
+static char *tipo_zona_to_string(zona tipo);
+static char *nemico_to_string(nemico nemico);
+static char *oggetto_to_string(oggetto oggetto);
 
 // ritorna un numero casuale tra 0 e 4 eccetto l'intero inserito
-static int rand_exept(int eccezione)
+// mondo distingue tra mondo reale e soprasotto, 0 = soprasotto, 1 = mondoreale
+static int rand_nemico(int mondo)
 {
     int r;
-    do
+    if (mondo == 0)
     {
-        r = rand() % tipiNemici;
-    } while (r == eccezione);
-
-    if (r == 3)
-    {
-        esisteDemotorzone = 1;
-        tipiNemici = 3;
+        do
+        {
+            r = rand() % tipiNemici;
+        } while (r == 1);
+        if (r == 3)
+        {
+            esisteDemotorzone = 1;
+            tipiNemici = 3;
+        }
     }
+    else
+    {
+        if (mondo == 1)
+        {
+            r = rand() % 2;
+        }
+    }
+
     return r;
 }
 /**
@@ -48,7 +66,7 @@ static void crea_zona_fine()
     Mondoreale *ultima_zona_reale = prima_zona_mondoreale->indietro;
     Soprasotto *ultima_zona_soprasotto = prima_zona_soprasotto->indietro;
 
-    nuova_zona_reale->nemico = rand_exept(3);
+    nuova_zona_reale->nemico = rand_nemico(1);
     nuova_zona_reale->oggetto = rand() % 5;
     nuova_zona_reale->tipo = rand() % 10;
     nuova_zona_reale->link_soprasotto = nuova_zona_soprasotto;
@@ -57,7 +75,7 @@ static void crea_zona_fine()
 
     nuova_zona_soprasotto->tipo = nuova_zona_reale->tipo;
     nuova_zona_soprasotto->link_mondoreale = nuova_zona_reale;
-    nuova_zona_soprasotto->nemico = rand_exept(1);
+    nuova_zona_soprasotto->nemico = rand_nemico(0);
     nuova_zona_soprasotto->avanti = prima_zona_soprasotto;
     nuova_zona_soprasotto->indietro = ultima_zona_soprasotto;
 
@@ -70,8 +88,8 @@ static void crea_zona_fine()
     numZone++;
 }
 
-static void crea_mappa()
-{ // crea 15 zone
+static void crea_mappa() // Fatto
+{                        // crea 15 zone
     prima_zona_mondoreale = (Mondoreale *)malloc(sizeof(Mondoreale));
     prima_zona_soprasotto = (Soprasotto *)malloc(sizeof(Soprasotto));
 
@@ -82,13 +100,13 @@ static void crea_mappa()
     zona_reale->link_soprasotto = zona_soprasotto;
     zona_reale->tipo = rand() % 10;
     zona_reale->oggetto = rand() % 5;
-    zona_reale->nemico = rand_exept(3);
+    zona_reale->nemico = rand_nemico(1);
     zona_reale->avanti = zona_reale;
     zona_reale->indietro = zona_reale;
 
     zona_soprasotto->link_mondoreale = zona_reale;
     zona_soprasotto->tipo = zona_reale->tipo;
-    zona_soprasotto->nemico = rand_exept(1);
+    zona_soprasotto->nemico = rand_nemico(0);
     zona_soprasotto->avanti = zona_soprasotto;
     zona_soprasotto->indietro = zona_soprasotto;
 
@@ -97,35 +115,290 @@ static void crea_mappa()
     {
         crea_zona_fine();
     }
+    printf("Mappa creata con successo!\n");
     scelta_mappa();
 }
 
-static void inserisci_zona(int posto)
+static void inserisci_zona(int posto) //Fatto
 {
+    // Scelta tipo zona
+    printf("Che tipo di zona sarà?\n");
+    for (int c = 0; c < tipiZone; c++)
+    {
+        printf("%d) %s\n", c + 1, tipo_zona_to_string(c));
+    }
+    char sceltaTipo[4];
+    long sceltaTipoInt;
+    do
+    {
+        printf("Inserisci il numero corrispondente al tipo di zona: ");
+        fgets(sceltaTipo, sizeof(sceltaTipo), stdin);
+        sceltaTipoInt = (strtol(sceltaTipo, NULL, 10)) - 1;
+
+        if (sceltaTipoInt < 0 || sceltaTipoInt >= tipiZone)
+        {
+            printf("Scelta non valida. Riprova.\n");
+        }
+    } while (sceltaTipoInt < 0 || sceltaTipoInt >= tipiZone);
+
+    // Scelta nemico mondo reale
+    printf("Ci sarà un nemico nel mondo reale?(y/n)\n");
+    char esisteNemicoReale[4];
+    int nemicoReale;
+    do
+    {
+        printf("Inserisci la tua scelta: ");
+        fgets(esisteNemicoReale, sizeof(esisteNemicoReale), stdin);
+        switch (tolower(esisteNemicoReale[0]))
+        {
+        case 'y':
+            nemicoReale = 1;
+            break;
+        case 'n':
+            nemicoReale = 0;
+            break;
+        default:
+            printf("Scelta non valida. Riprova.\n");
+            break;
+        }
+    } while (tolower(esisteNemicoReale[0]) != 'y' && tolower(esisteNemicoReale[0]) != 'n');
+
+    // Scelta nemico soprasotto
+    printf("Ci sarà un nemico nel soprasotto?(y/n)\n");
+    char esisteNemicoSoprasotto[4];
+    int nemicoSoprasotto;
+    do
+    {
+        printf("Inserisci la tua scelta: ");
+        fgets(esisteNemicoSoprasotto, sizeof(esisteNemicoSoprasotto), stdin);
+        switch (tolower(esisteNemicoSoprasotto[0]))
+        {
+        case 'y':
+            if (esisteDemotorzone)
+            {
+                printf("Il nemico nel soprasotto sarà un Democane (esiste già un Demotorzone).\n");
+                nemicoSoprasotto = 2;
+            }
+            else
+            {
+                printf("Che tipo di demone sarà?\n");
+                printf("1) Democane\n");
+                printf("2) Demotorzone\n");
+                char sceltaNemico[4];
+                long sceltaNemicoInt;
+                do
+                {
+
+                    printf("Inserisci il numero corrispondente al tipo di demone: ");
+                    fgets(sceltaNemico, sizeof(sceltaNemico), stdin);
+                    sceltaNemicoInt = strtol(sceltaNemico, NULL, 10);
+                    switch (sceltaNemicoInt)
+                    {
+                    case 1:
+                        nemicoSoprasotto = 2;
+                        break;
+                    case 2:
+                        nemicoSoprasotto = 3;
+                        esisteDemotorzone = 1;
+                        tipiNemici = 3;
+                        break;
+                    default:
+                        printf("Scelta non valida. Riprova.\n");
+                        break;
+                    }
+                } while (sceltaNemicoInt < 1 || sceltaNemicoInt > 2);
+            }
+        case 'n':
+            nemicoSoprasotto = 0;
+            break;
+        default:
+            printf("Scelta non valida. Riprova.\n");
+            break;
+        }
+    } while (tolower(esisteNemicoSoprasotto[0]) != 'y' && tolower(esisteNemicoSoprasotto[0]) != 'n');
+
+    // Scelta oggetto
+    printf("Che oggetto che sarà nella zona del mondo reale?\n");
+    for (int c = 0; c < tipiOggetti; c++)
+    {
+        printf("%d) %s\n", c + 1, oggetto_to_string(c));
+    }
+    char sceltaOggetto[4];
+    long sceltaOggettoInt;
+    do
+    {
+        printf("Inserisci il numero corrispondente all'oggetto: ");
+        fgets(sceltaOggetto, sizeof(sceltaOggetto), stdin);
+        sceltaOggettoInt = (strtol(sceltaOggetto, NULL, 10)) - 1;
+        if (sceltaOggettoInt < 0 || sceltaOggettoInt >= tipiOggetti)
+        {
+            printf("Scelta non valida. Riprova.\n");
+        }
+    } while (sceltaOggettoInt < 0 || sceltaOggettoInt >= tipiOggetti);
+
+    // Creazione nuova zona
+    Mondoreale *nuova_zona_reale = (Mondoreale *)malloc(sizeof(Mondoreale));
+    Soprasotto *nuova_zona_soprasotto = (Soprasotto *)malloc(sizeof(Soprasotto));
+    nuova_zona_reale->tipo = sceltaTipoInt;
+    nuova_zona_reale->nemico = nemicoReale;
+    nuova_zona_reale->oggetto = sceltaOggettoInt;
+    nuova_zona_reale->link_soprasotto = nuova_zona_soprasotto;
+
+    nuova_zona_soprasotto->tipo = sceltaTipoInt;
+    nuova_zona_soprasotto->nemico = nemicoSoprasotto;
+    nuova_zona_soprasotto->link_mondoreale = nuova_zona_reale;
+
+    // Inserimento nuova zona nella mappa
+    Mondoreale *pScan_reale = prima_zona_mondoreale;
+    for (int c = 1; c < posto; c++)
+    {
+        if (c != posto)
+        {
+            pScan_reale = pScan_reale->avanti;
+        }
+    }
+    Mondoreale *pPrev_reale = pScan_reale->indietro;
+    pPrev_reale->avanti = nuova_zona_reale;
+    nuova_zona_reale->indietro = pPrev_reale;
+    nuova_zona_reale->avanti = pScan_reale;
+    pScan_reale->indietro = nuova_zona_reale;
+
+    Soprasotto *pScan_sotto = pScan_reale->link_soprasotto;
+    Soprasotto *pPrev_sotto = pScan_sotto->indietro;
+    pPrev_sotto->avanti = pScan_sotto;
+    nuova_zona_soprasotto->indietro = pPrev_sotto;
+    nuova_zona_soprasotto->avanti = pScan_sotto;
+    pScan_sotto->indietro = nuova_zona_soprasotto;
+
+    if (posto == 1)
+    {
+        prima_zona_mondoreale = nuova_zona_reale;
+        prima_zona_soprasotto = nuova_zona_soprasotto;
+    }
+    printf("Zona inserita con successo!\n");
+    numZone++;
+    scelta_mappa();
 }
 
 static void cancella_zona(int posto)
 {
+    Mondoreale *pScan_reale = prima_zona_mondoreale;
+
+    for (int c = 0; c < numZone; c++)
+    {
+        if (c != posto)
+        {
+            pScan_reale = pScan_reale->avanti;
+        }
+    }
+
+    Mondoreale *pPrev_reale = pScan_reale->indietro;
+    Mondoreale *pNext_reale = pScan_reale->avanti;
+    pPrev_reale->avanti = pNext_reale;
+    pNext_reale->indietro = pPrev_reale;
+
+    Soprasotto *pScan_sotto = pScan_reale->link_soprasotto;
+    Soprasotto *pPrev_sotto = pScan_sotto->indietro;
+    Soprasotto *pNext_sotto = pScan_sotto->avanti;
+    pPrev_sotto->avanti = pNext_sotto;
+    pNext_sotto->indietro = pPrev_sotto;
+
+    if (posto == 1)
+    {
+        prima_zona_mondoreale = pNext_reale;
+        prima_zona_soprasotto = pNext_sotto;
+    }
+
+    pScan_reale = NULL;
+    pScan_sotto = NULL;
+    free(pScan_reale);
+    free(pScan_sotto);
+
+    printf("Zona cancellata con successo!\n");
+    numZone--;
+    scelta_mappa();
 }
 
-static void stampa_mappa()
+static char *tipo_zona_to_string(zona tipo)
 {
-    char scelta[4];
-    long sceltaInt;
-    printf("Quale mappa, mondo reale(1) o soprasotto(2)?: ");
-    fgets(scelta, sizeof(scelta), stdin);
-    sceltaInt = strtol(scelta, NULL, 10);
+    switch (tipo)
+    {
+    case bosco:
+        return "Bosco";
+    case scuola:
+        return "Scuola";
+    case laboratorio:
+        return "Laboratorio";
+    case caverna:
+        return "Caverna";
+    case strada:
+        return "Strada";
+    case giardino:
+        return "Giardino";
+    case supermercato:
+        return "Supermercato";
+    case centrale_elettrica:
+        return "Centrale Elettrica";
+    case deposito_abbandonato:
+        return "Deposito Abbandonato";
+    case stazione_polizia:
+        return "Stazione Polizia";
+    default:
+        return "Tipo sconosciuto";
+    }
+}
+static char *nemico_to_string(nemico nemico)
+{
+    switch (nemico)
+    {
+    case nessun_nemico:
+        return "Nessun_nemico";
+    case billi:
+        return "Billi";
+    case democane:
+        return "Democane";
+    case demotorzone:
+        return "Demotorzone";
+    default:
+        return "Nemico sconosciuto";
+    }
+}
+static char *oggetto_to_string(oggetto oggetto)
+{
+    switch (oggetto)
+    {
+    case nessun_oggetto:
+        return "Nessun oggetto";
+    case bicicletta:
+        return "Bicicletta";
+    case maglietta_fuocoinferno:
+        return "Maglietta Fuoco Inferno";
+    case bussola:
+        return "Bussola";
+    case schitarrata_metallica:
+        return "Schitarrata Metallica";
+    default:
+        return "Oggetto sconosciuto";
+    }
+}
 
-    if (sceltaInt != 1 && sceltaInt != 2)
+static void stampa_mappa() // Fatto
+{
+    char sceltaMappa[4];
+    long sceltaMappaInt;
+    printf("Quale mappa, mondo reale(1) o soprasotto(2)?: ");
+    fgets(sceltaMappa, sizeof(sceltaMappa), stdin);
+    sceltaMappaInt = strtol(sceltaMappa, NULL, 10);
+    if (sceltaMappaInt != 1 && sceltaMappaInt != 2)
     {
         printf("Scelta non valida. Riprova.\n");
         stampa_mappa();
     }
     else
     {
-        int i = 0;
+        int i = 1;
 
-        switch (sceltaInt)
+        switch (sceltaMappaInt)
         {
         case 1:
 
@@ -134,9 +407,9 @@ static void stampa_mappa()
             do
             {
                 printf("Zona %d\n", i);
-                printf("Tipo: %d\n", pScan_reale->tipo);
-                printf("Nemico: %d\n", pScan_reale->nemico);
-                printf("Oggetto: %d\n", pScan_reale->oggetto);
+                printf("Tipo: %s\n", tipo_zona_to_string(pScan_reale->tipo));
+                printf("Nemico: %s\n", nemico_to_string(pScan_reale->nemico));
+                printf("Oggetto: %s\n", oggetto_to_string(pScan_reale->oggetto));
                 pScan_reale = pScan_reale->avanti;
                 i++;
             } while (pScan_reale != prima_zona_mondoreale);
@@ -148,8 +421,8 @@ static void stampa_mappa()
             do
             {
                 printf("Zona %d\n", i);
-                printf("Tipo: %d\n", pScan_sotto->tipo);
-                printf("Nemico: %d\n", pScan_sotto->nemico);
+                printf("Tipo: %s\n", tipo_zona_to_string(pScan_sotto->tipo));
+                printf("Nemico: %s\n", nemico_to_string(pScan_sotto->nemico));
                 pScan_sotto = pScan_sotto->avanti;
                 i++;
             } while (pScan_sotto != prima_zona_soprasotto);
@@ -173,22 +446,22 @@ static int lanciaD20()
     return rand() % 20 + 1;
 }
 
-static void scelta_attributi(Giocatore *giocatore)
+static void scelta_attributi(Giocatore *giocatore) // Fatto
 {
-    char scelta[4];
-    long sceltaInt;
+    char sceltaModificatore[4];
+    long sceltaModificatoreInt;
     printf("Fai la tua scelta: ");
-    fgets(scelta, sizeof(scelta), stdin);
-    sceltaInt = strtol(scelta, NULL, 10);
+    fgets(sceltaModificatore, sizeof(sceltaModificatore), stdin);
+    sceltaModificatoreInt = strtol(sceltaModificatore, NULL, 10);
 
-    if (sceltaInt < 1 || sceltaInt > 4 || (sceltaInt == 4 && esisteVirgola))
+    if (sceltaModificatoreInt < 1 || sceltaModificatoreInt > 4 || (sceltaModificatoreInt == 4 && esisteVirgola))
     {
         printf("Scelta non valida. Riprova.\n");
         scelta_attributi(giocatore); // Ripeti il turno per lo stesso giocatore
     }
     else
     {
-        switch (sceltaInt)
+        switch (sceltaModificatoreInt)
         {
         case 1:
             giocatore->attacco_psichico += 3;
@@ -248,47 +521,99 @@ static void scelta_attributi(Giocatore *giocatore)
 
 static void scelta_mappa()
 {
-    printf("Ora può scegliere come creare la mappa di gioco:\n");
-    printf("1)Genera mappa in maniera casuale\n");
-    printf("2)Inserisci zona, in una posizione dettata del game master\n");
-    printf("3)Cancella zona, in una posizione dettata del game master\n");
-    printf("4)Stampa la mappa\n");
-    printf("5)Stampa zona singola (sia del mondo reale che soprasotto), a piacere del game master\n");
-    printf("6)Esci dalla creazione della mappa\n");
-    printf("Inserisci la tua scelta: ");
-
     char scelta[4];
     long sceltaInt;
-    fgets(scelta, sizeof(scelta), stdin);
-    sceltaInt = strtol(scelta, NULL, 10);
+    printf("1)Genera mappa in maniera casuale\n");
+    printf("2)Inserisci zona, in una posizione a scelta\n");
+    printf("3)Cancella zona, in una posizione a scelta\n");
+    printf("4)Stampa la mappa\n");
+    printf("5)Stampa zona singola\n");
+    printf("6)Esci dalla creazione della mappa\n");
 
-    if (sceltaInt < 1 || sceltaInt > 6)
+    do
     {
-        printf("Scelta non valida. riprova.\n");
-        scelta_mappa();
-    }
+        printf("Inserisci la tua scelta: ");
+        fgets(scelta, sizeof(scelta), stdin);
+        sceltaInt = strtol(scelta, NULL, 10);
+
+        if (sceltaInt < 1 || sceltaInt > 6)
+        {
+            printf("Scelta non valida. riprova.\n");
+        }
+    } while (sceltaInt < 1 || sceltaInt > 6);
 
     switch (sceltaInt)
     {
     case 1:
+        cancella_mappa();
         crea_mappa();
         break;
     case 2:
-        inserisci_zona(0); // da implementare
+        char posto[4];
+        long postoInt;
+        do
+        {
+            printf("Inserisci la posizione in cui vuoi inserire la nuova zona (zone attuali %d): ", numZone);
+            fgets(posto, sizeof(posto), stdin);
+            postoInt = strtol(posto, NULL, 10);
+            if (postoInt < 1 || postoInt > numZone)
+            {
+                printf("Posizione non valida. Riprova.\n");
+            }
+        } while (postoInt < 1 || postoInt > numZone);
 
+        inserisci_zona(postoInt);
         break;
     case 3:
-        cancella_zona(0); // da implementare
+        char postoCancellare[4];
+        long postoCancellareInt;
+        do
+        {
+            printf("Inserisci la posizione della zona che vuoi cancellare (zone attuali %d): ", numZone);
+            fgets(postoCancellare, sizeof(postoCancellare), stdin);
+            postoCancellareInt = strtol(postoCancellare, NULL, 10);
+            if (postoCancellareInt < 1 || postoCancellareInt > numZone)
+            {
+                printf("Posizione non valida. Riprova.\n");
+            }
+        } while (postoCancellareInt < 1 || postoCancellareInt > numZone);
+        cancella_zona(postoCancellareInt);
+        printf("Zona cancellata con successo!\n");
         break;
     case 4:
         stampa_mappa();
         break;
     case 5:
-        stampa_zona();
+        stampa_zona(); // da implementare
         break;
     case 6:
-        chiudi_mappa();
+        chiudi_mappa(); // da implementare
         break;
+    }
+}
+
+static void cancella_mappa()
+{
+    if (prima_zona_mondoreale != NULL)
+    {
+        Mondoreale *pScan_reale = prima_zona_mondoreale;
+        Soprasotto *pScan_sotto = prima_zona_soprasotto;
+        for (int c = 1; c < numZone; c++)
+        {
+            Mondoreale *pTemp_reale = pScan_reale;
+            Soprasotto *pTemp_sotto = pScan_sotto;
+            pScan_reale = pScan_reale->avanti;
+            pScan_sotto = pScan_sotto->avanti;
+            pTemp_reale = NULL;
+            pTemp_sotto = NULL;
+            free(pTemp_reale);
+            free(pTemp_sotto);
+        }
+        prima_zona_mondoreale = NULL;
+        prima_zona_soprasotto = NULL;
+        free(prima_zona_mondoreale);
+        free(prima_zona_soprasotto);
+        numZone = 0;
     }
 }
 
@@ -340,7 +665,7 @@ void imposta_gioco()
             scelta_attributi(&(giocatori[i]));
         }
     }
-
+    printf("Ora può scegliere come creare la mappa di gioco:\n");
     scelta_mappa();
 }
 
