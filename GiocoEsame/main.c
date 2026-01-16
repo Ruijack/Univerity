@@ -19,7 +19,6 @@ int main()
         printf("2)Gioca\n");
         printf("3)Esci\n");
         printf("4)Crediti\n");
-        printf("Inserisci il comando: ");
         int giocoImpostato = 0;
         printf("Inserisci il comando: ");
         fgets(scelta, sizeof(scelta), stdin);
