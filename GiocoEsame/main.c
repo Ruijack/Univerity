@@ -10,8 +10,8 @@ int main()
     // printf("Benvenuto giocatore!\n");
     // printf("Sarai pronto per affrontare l'avventura in Occhinz?\n");
     char scelta[4];
-    long sceltaInt;
-
+    int sceltaInt;
+    int giocoImpostato = 0;
     do
     {
         printf("      CoseStrane\n");
@@ -19,16 +19,17 @@ int main()
         printf("2)Gioca\n");
         printf("3)Esci\n");
         printf("4)Crediti\n");
-        int giocoImpostato = 0;
+        
         printf("Inserisci il comando: ");
         fgets(scelta, sizeof(scelta), stdin);
 
-        sceltaInt = strtol(scelta, NULL, 10);
+        sceltaInt = (int) strtol(scelta, NULL, 10);
         switch (sceltaInt)
         {
         case 1:
             imposta_gioco();
             giocoImpostato = 1;
+            printf("Gioco impostato con successo!\n");
             break;
         case 2:
             if (!giocoImpostato)
@@ -37,14 +38,17 @@ int main()
             }
             else
             {
+                printf("Inizio del gioco!\n");
                 gioca();
             }
             break;
         case 3:
-
-            return 0;
+            printf("Termina gioco.\n");
+            //termina_gioco();
+            break;
         case 4:
-
+            printf("Visualizza crediti.\n");
+            //crediti();
             break;
         default:
             printf("Scelta non valida, inserire un comando valido.\n");
