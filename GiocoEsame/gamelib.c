@@ -13,17 +13,24 @@ typedef enum Tipo_oggetto oggetto;
 
 static const int tipiZone = 10;
 static const int tipiOggetti = 5;
+static const int psBilli = 15;
+static const int psDemocane = 25;
+static const int psDemotorzone = 50;
+static const int paBilli = 4;
+static const int paDemocane = 5;
+static const int paDemotorzone = 8;
+
 static Mondoreale *prima_zona_mondoreale;
 static Soprasotto *prima_zona_soprasotto;
 static Giocatore *giocatori;
 static char lanciaDado[50];
 static nemico nemicoSconfitto = 0;
 static int esisteVirgola;
-static int fine = 0;
 static int esisteDemotorzone = 0;
 static int numZone = 0;
 static int tipiNemici = 4;
 static int numGiocatori;
+static int passaTurno = 0;
 static int numTurno = 0;
 static int *ordineTurno;
 
@@ -718,8 +725,23 @@ void imposta_gioco() // Fatto
 
     for (int i = 0; i < numGiocatori; i++)
     {
-        printf("Inserire il nome del giocatore %d (Max 50 caratteri): ", i + 1);
-        fgets(giocatori[i].nome, sizeof(giocatori[i].nome), stdin);
+        do
+        {
+            printf("Inserire il nome del giocatore %d (Max 50 caratteri): ", i + 1);
+            fgets(giocatori[i].nome, sizeof(giocatori[i].nome), stdin);
+            if (strlen(giocatori[i].nome) < 1 || strlen(giocatori[i].nome) > 51)
+            {
+                printf("Nome non valido. Riprova.\n");
+            }
+
+        } while (strlen(giocatori[i].nome) < 1 || strlen(giocatori[i].nome) > 51);
+
+        int lunghezzaNome = sizeof(giocatori[i].nome) / sizeof(giocatori[i].nome[0]);
+        if (giocatori[i].nome[lunghezzaNome - 1] == '\n')
+        {
+            giocatori[i].nome[lunghezzaNome - 1] = '\0';
+        }
+
         printf("Le tue statistiche verrano generate casualmente (tirando un  D20 per ogni statistica).\n");
         giocatori[i].attacco_psichico = lanciaD20();
         giocatori[i].difesa_psichica = lanciaD20();
@@ -761,22 +783,24 @@ static void genera_ordine_turno()
 {
     ordineTurno = calloc(numGiocatori, sizeof(int));
     ordineTurno[0] = rand() % numGiocatori;
-    int esiste;
-    for (int c = 1; c < numGiocatori; c++)
+    if (numGiocatori > 1)
     {
-
-        do
+        int esiste;
+        for (int c = 1; c < numGiocatori; c++)
         {
-            esiste = 0;
-            ordineTurno[c] = rand() % numGiocatori;
-            for (int i = 0; i < c; i++)
+            do
             {
-                if (ordineTurno[i] == ordineTurno[c])
+                esiste = 0;
+                ordineTurno[c] = rand() % numGiocatori;
+                for (int i = 0; i < c; i++)
                 {
-                    esiste = 1;
+                    if (ordineTurno[i] == ordineTurno[c])
+                    {
+                        esiste = 1;
+                    }
                 }
-            }
-        } while (esiste);
+            } while (esiste);
+        }
     }
     numTurno++;
 }
@@ -798,33 +822,19 @@ static int pZona_toNumZona(Mondoreale *pZona)
     }
     return c + 1;
 }
-static void avanza(Giocatore player, int *azione) // Fatto
+static void avanza(Giocatore *player, int *azione) // Fatto
 {
-    if (nemicoSconfitto != 0)
-    {
-        if (player.mondo == 0)
-        {
-            player.pos_mondoreale->indietro->nemico = nemicoSconfitto;
-        }
-        else
-        {
-            player.pos_soprasotto->indietro->nemico = nemicoSconfitto;
-            
-        }
-        nemicoSconfitto = 0;
-    }
-
     int esisteNemico = 0;
-    if (player.mondo == 0)
+    if (player->mondo == 0)
     {
-        if (player.pos_mondoreale->nemico != nessun_nemico)
+        if (player->pos_mondoreale->nemico != nessun_nemico)
         {
             esisteNemico = 1;
         }
     }
     else
     {
-        if (player.pos_soprasotto->nemico != nessun_nemico)
+        if (player->pos_soprasotto->nemico != nessun_nemico)
         {
             esisteNemico = 1;
         }
@@ -836,34 +846,46 @@ static void avanza(Giocatore player, int *azione) // Fatto
     }
     else
     {
-        player.pos_mondoreale = player.pos_mondoreale->avanti;
-        player.pos_soprasotto = player.pos_mondoreale->link_soprasotto;
-        *azione = 0;
-        if (player.mondo == 0)
+        // Rigenera il nemico
+        if (nemicoSconfitto != 0)
         {
-            printf("Ora %s si trova nella zona %d del mondo reale\n", player.nome, pZona_toNumZona(player.pos_mondoreale));
+            if (player->mondo == 0)
+            {
+                player->pos_mondoreale->nemico = nemicoSconfitto;
+            }
+            else
+            {
+                player->pos_soprasotto->nemico = nemicoSconfitto;
+            }
+            nemicoSconfitto = 0;
+        }
+        player->pos_mondoreale = player->pos_mondoreale->avanti;
+        player->pos_soprasotto = player->pos_mondoreale->link_soprasotto;
+        *azione = 0;
+        if (player->mondo == 0)
+        {
+            printf("Ora %s si trova nella zona %d del mondo reale\n", player->nome, pZona_toNumZona(player->pos_mondoreale));
         }
         else
         {
-            printf("Ora %s si trova nella zona %d del soprasotto\n", player.nome, pZona_toNumZona(player.pos_mondoreale));
+            printf("Ora %s si trova nella zona %d del soprasotto\n", player->nome, pZona_toNumZona(player->pos_mondoreale));
         }
-        printf("Zona n.%d, in avanza\n", pZona_toNumZona(player.pos_mondoreale));
     }
 }
 
-static void indietreggia(Giocatore player, int *azione) // Fatto
+static void indietreggia(Giocatore *player) // Fatto
 {
     int esisteNemico = 0;
-    if (player.mondo == 0)
+    if (player->mondo == 0)
     {
-        if (player.pos_mondoreale->nemico != 0)
+        if (player->pos_mondoreale->nemico != 0)
         {
             esisteNemico = 1;
         }
     }
     else
     {
-        if (player.pos_soprasotto->nemico != 0)
+        if (player->pos_soprasotto->nemico != 0)
         {
             esisteNemico = 1;
         }
@@ -875,82 +897,81 @@ static void indietreggia(Giocatore player, int *azione) // Fatto
     }
     else
     {
-        if (player.pos_mondoreale == prima_zona_mondoreale)
+        if (player->pos_mondoreale == prima_zona_mondoreale)
         {
             printf("Non puoi andare più indietro di così\n");
         }
         else
         {
-            player.pos_mondoreale = player.pos_mondoreale->indietro;
-            player.pos_soprasotto = player.pos_mondoreale->link_soprasotto;
-            *azione = 0;
-            if (player.mondo == 0)
+            player->pos_mondoreale = player->pos_mondoreale->indietro;
+            player->pos_soprasotto = player->pos_mondoreale->link_soprasotto;
+            if (player->mondo == 0)
             {
-                printf("Ora %s si trova nella zona %d del mondo reale\n", player.nome, pZona_toNumZona(player.pos_mondoreale));
+                printf("Ora %s si trova nella zona %d del mondo reale\n", player->nome, pZona_toNumZona(player->pos_mondoreale));
             }
             else
             {
-                printf("Ora %s si trova nella zona %d del soprasotto\n", player.nome, pZona_toNumZona(player.pos_mondoreale));
+                printf("Ora %s si trova nella zona %d del soprasotto\n", player->nome, pZona_toNumZona(player->pos_mondoreale));
             }
         }
     }
 }
 
-static void stampa_zona_corrente(Giocatore player) // Fatto
+static void stampa_zona_corrente(Giocatore *player) // Fatto
 {
-    if (player.mondo == 0)
+    if (player->mondo == 0)
     {
-        Mondoreale *zona_corrente = player.pos_mondoreale;
-        printf("Zona %d del mondo reale\n", pZona_toNumZona(player.pos_mondoreale));
+        Mondoreale *zona_corrente = player->pos_mondoreale;
+        printf("Zona %d del mondo reale\n", pZona_toNumZona(player->pos_mondoreale));
         printf("Tipo zona: %s\n", tipo_zona_toString(zona_corrente->tipo));
         printf("Nemico: %s\n", nemico_toString(zona_corrente->nemico));
         printf("Oggetto: %s\n", oggetto_toString(zona_corrente->oggetto));
     }
     else
     {
-        Soprasotto *zona_corrente = player.pos_soprasotto;
-        printf("Zona %d del mondo reale\n", pZona_toNumZona(player.pos_mondoreale));
+        Soprasotto *zona_corrente = player->pos_soprasotto;
+        printf("Zona %d del soprasotto\n", pZona_toNumZona(player->pos_mondoreale));
         printf("Tipo zona: %s\n", tipo_zona_toString(zona_corrente->tipo));
         printf("Nemico: %s\n", nemico_toString(zona_corrente->nemico));
     }
 }
 
-static void rimuovi_giocatore(Giocatore player)
+static void rimuovi_giocatore(Giocatore *player)
 {
-    numGiocatori = numGiocatori - 1;
-    if (numGiocatori != 0)
+    numGiocatori--;
+    int i = 0;
+    Giocatore *scanGiocatori = (Giocatore *)malloc(sizeof(Giocatore));
+    for (scanGiocatori = &giocatori[i]; scanGiocatori != &giocatori[numGiocatori - 1]; ++i, scanGiocatori = &giocatori[i])
     {
-        Giocatore *giocatoriRimasti = calloc(numGiocatori, sizeof(Giocatore));
-        int i = 0;
-        for (Giocatore *scanGiocatori = (Giocatore *)malloc(sizeof(Giocatore)); scanGiocatori != &giocatori[numGiocatori - 1]; scanGiocatori++)
+        if (&scanGiocatori != &player)
         {
-            if (scanGiocatori != &player)
-            {
-                giocatoriRimasti[i] = *scanGiocatori;
-                i++;
-            }
+            giocatori[i] = *scanGiocatori;
         }
-        giocatori = giocatoriRimasti;
+        else
+        {
+            scanGiocatori = NULL;
+            free(&scanGiocatori);
+        }
     }
 }
 
-static void combattimento(Giocatore player, nemico tipoNemico)
+static void combattimento(Giocatore *player, nemico tipoNemico)
 {
     int psNemico, paNemico;
 
     switch (tipoNemico)
     {
     case billi:
-        psNemico = 15;
-        paNemico = 5;
+        psNemico = psBilli;
+        paNemico = paBilli;
         break;
     case democane:
-        psNemico = 20;
-        paNemico = 6;
+        psNemico = psDemocane;
+        paNemico = paDemocane;
         break;
     case demotorzone:
-        psNemico = 50;
-        paNemico = 8;
+        psNemico = psDemotorzone;
+        paNemico = paDemotorzone;
         break;
     default:
         break;
@@ -964,40 +985,48 @@ static void combattimento(Giocatore player, nemico tipoNemico)
         // fgets(lanciaDado, sizeof(lanciaDado), stdin);
         int caso = lanciaD20();
         printf("È uscito: %d\n", caso);
-        psNemico = psNemico - (caso + player.attacco_psichico);
+        psNemico = psNemico - (caso + player->attacco_psichico);
 
         if (psNemico <= 0)
         {
-            printf("Il nemico è stato sconfitto! ");
-
-            int nemicoSparisce = rand() % 2;
-            if (nemicoSparisce)
+            if (tipoNemico == demotorzone)
             {
-                if (player.mondo == 0)
-                {
-                    player.pos_mondoreale->nemico = nessun_nemico;
-                }
-                else
-                {
-                    player.pos_soprasotto->nemico = nessun_nemico;
-                }
-
-                printf("È sparito in un cumulo di fumo bianco\n");
+                esisteDemotorzone = 0;
             }
             else
             {
-                nemicoSconfitto = tipoNemico;
-                if (player.mondo == 0)
+                printf("Il nemico è stato sconfitto! ");
+
+                int nemicoSparisce = rand() % 2;
+                if (nemicoSparisce)
                 {
-                    player.pos_mondoreale->nemico = nessun_nemico;
+                    if (player->mondo == 0)
+                    {
+                        player->pos_mondoreale->nemico = nessun_nemico;
+                    }
+                    else
+                    {
+                        player->pos_soprasotto->nemico = nessun_nemico;
+                    }
+
+                    printf("È sparito in un cumulo di fumo bianco\n");
                 }
                 else
                 {
-                    player.pos_soprasotto->nemico = nessun_nemico;
+                    // variabile globale che viene utilizzata quando il giocatore passa il turno
+                    nemicoSconfitto = tipoNemico;
+                    if (player->mondo == 0)
+                    {
+                        player->pos_mondoreale->nemico = nessun_nemico;
+                    }
+                    else
+                    {
+                        player->pos_soprasotto->nemico = nessun_nemico;
+                    }
+                    printf("Ma quando ti muoverai tornerà\n");
                 }
-                printf("Ma quando avanzerai tornerà\n");
+                break;
             }
-            break;
         }
         else
         {
@@ -1005,73 +1034,66 @@ static void combattimento(Giocatore player, nemico tipoNemico)
 
             // Il nemico attacca
             printf("Turno dell'avversario, ha attacco psichico fisso di %d\n", paNemico);
-            printf("Puoi ancora salvarti, tira il dado per provare a schivare.(per schivare serve un numero minore della somma tra il tiro e la tua fortuna)\n ");
-            // fgets(lanciaDado, sizeof(lanciaDado), stdin);
-            int schivata;
-            if (lanciaDado[0] != '\n')
-            {
-                schivata = lanciaD20() + player.fortuna, caso = (rand() % 100) + 1;
-            }
+            printf("Puoi ancora salvarti, tira il dado per provare a schivare.\n(per schivare serve un numero minore della somma tra il tiro e la tua fortuna)\n ");
+
+            int schivata = lanciaD20() + player->fortuna, caso = (rand() % 75) + 1;
             // Se schivata è minore o uguale a caso, il giocatore schiva l'attacco del nemico
             if (caso > schivata)
             {
                 printf("Sei stato colpito!\n");
-                player.difesa_psichica = player.difesa_psichica - psNemico;
-                printf("%s ha %d punti di difesa psichica rimasti\n", player.nome, player.difesa_psichica);
+                player->difesa_psichica = player->difesa_psichica - paNemico;
+                if (player->difesa_psichica <= 0)
+                {
+                    printf("%s è stato sconfitto!", player->nome);
+                }
+                else
+                {
+                    printf("%s ha %d punti di difesa psichica rimasti\n", player->nome, player->difesa_psichica);
+                }
             }
             else
             {
                 printf("Hai evaso l'attacco nemico\n");
-                printf("%s ha %d punti di difesa psichica rimasti\n", player.nome, player.difesa_psichica);
+                printf("%s ha %d punti di difesa psichica rimasti\n", player->nome, player->difesa_psichica);
             }
         }
 
-        if (player.difesa_psichica <= 0)
-        {
-            printf("%s è stato sconfitto!", player.nome);
-        }
-
-    } while (psNemico > 0 && player.difesa_psichica > 0);
-
-    if (player.difesa_psichica <= 0)
-    {
-        rimuovi_giocatore(player);
-    }
+    } while (psNemico > 0 && player->difesa_psichica > 0);
 }
 
-static void combatti(Giocatore player)
+static void combatti(Giocatore *player)
 {
     int esisteNemico = 0;
-
-    if (player.mondo == 0)
+    nemico tipoNemico;
+    if (player->mondo == 0)
     {
-        if (player.pos_mondoreale->nemico != nessun_nemico)
+        if (player->pos_mondoreale->nemico != nessun_nemico)
         {
+            tipoNemico = player->pos_mondoreale->nemico;
             esisteNemico = 1;
         }
     }
     else
     {
-        if (player.pos_soprasotto->nemico != nessun_nemico)
+        if (player->pos_soprasotto->nemico != nessun_nemico)
         {
+            tipoNemico = player->pos_soprasotto->nemico;
             esisteNemico = 1;
         }
     }
 
     if (esisteNemico)
     {
-        nemico tipoNemico = player.pos_mondoreale->nemico;
-
         switch (tipoNemico)
         {
         case billi:
-            printf("Il tuo nemico sarà Billi (attacco psichico 5, difesa psichica 15)\n");
+            printf("Il tuo nemico sarà Billi (attacco psichico %d, difesa psichica %d)\n", paBilli, psBilli);
             break;
         case democane:
-            printf("Il tuo nemico sarà Democane (attacco psichico 6, difesa psichica 20)\n");
+            printf("Il tuo nemico sarà Democane (attacco psichico %d, difesa psichica %d)\n", paDemocane, psDemocane);
             break;
         case demotorzone:
-            printf("Il tuo nemico sarà il Demotorzone (attacco psichico 8, difesa psichica 50)\n");
+            printf("Il tuo nemico sarà il Demotorzone (attacco psichico %d, difesa psichica %d)\n", paDemotorzone, psDemotorzone);
             break;
         default:
             break;
@@ -1100,33 +1122,171 @@ static void combatti(Giocatore player)
         printf("Non c'è un nemico in questa zona\n");
     }
 }
+
+static void cambia_mondo(Giocatore *player, int *azione) // Fatto
+{
+
+    if (player->mondo == 0)
+    {
+        if (player->pos_mondoreale->nemico != nessun_nemico)
+        {
+            printf("C'è ancora un nemico in questa zona del mondo reale!\n");
+        }
+        else
+        {
+            if (nemicoSconfitto != 0)
+            {
+                if (player->mondo == 0)
+                {
+                    player->pos_mondoreale->nemico = nemicoSconfitto;
+                }
+                else
+                {
+                    player->pos_soprasotto->nemico = nemicoSconfitto;
+                }
+                nemicoSconfitto = 0;
+            }
+            player->mondo = 1;
+            *azione = 0;
+            printf("%s ora si trova nel soprasotto, zona n.%d\n", player->nome, pZona_toNumZona(player->pos_mondoreale));
+        }
+    }
+    else
+    {
+        if (player->pos_soprasotto->nemico != nessun_nemico)
+        {
+            printf("C'è ancora un nemico in questa zona del soprasotto!\n");
+            printf("Per passare al mondo reale dovrai tirare un dado,\n");
+            printf("se il risultato è inferiore alla tua fortuna passerai altrimenti sprecherai solo la tua azione\n");
+
+            char scelta[2];
+            do
+            {
+                printf("Vuoi rischiare (La tua fortuna è %d)? (y/n) ", player->fortuna);
+                fgets(scelta, sizeof(scelta), stdin);
+                if (scelta[0] != 'y' || scelta[0] != 'n')
+                {
+                    printf("Inserire una scelta valida, per favore\n");
+                }
+
+            } while (scelta[0] != 'y' || scelta[0] != 'n');
+
+            if (scelta[0] == 'y')
+            {
+                int caso = lanciaD20();
+                *azione = 0;
+                if (caso <= player->fortuna)
+                {
+                    // Prima di muovere il giocatore rigenera il nemico
+                    if (nemicoSconfitto != 0)
+                    {
+                        if (player->mondo == 0)
+                        {
+                            player->pos_mondoreale->nemico = nemicoSconfitto;
+                        }
+                        else
+                        {
+                            player->pos_soprasotto->nemico = nemicoSconfitto;
+                        }
+                        nemicoSconfitto = 0;
+                    }
+                    player->mondo = 0;
+                    printf("Lancio: %d, ti è andata bene ora sei nel mondo reale, zona %d\n", caso, pZona_toNumZona(player->pos_mondoreale));
+                }
+                else
+                {
+                    printf("Lancio: %d, ti è andata male sei ancora nel soprasotto, zona %d\n", caso, pZona_toNumZona(player->pos_mondoreale));
+                }
+            }
+        }
+        else
+        {
+            if (nemicoSconfitto != 0)
+            {
+                if (player->mondo == 0)
+                {
+                    player->pos_mondoreale->nemico = nemicoSconfitto;
+                }
+                else
+                {
+                    player->pos_soprasotto->nemico = nemicoSconfitto;
+                }
+                nemicoSconfitto = 0;
+            }
+            player->mondo = 0;
+            *azione = 0;
+            printf("%s ora si trova nel mondo reale, zona n.%d\n", player->nome, pZona_toNumZona(player->pos_mondoreale));
+        }
+    }
+}
+
+static void stampa_statistiche(Giocatore *player)
+{
+    printf("Statistiche di %s:\n", player->nome);
+    printf("Attacco psichico: %d\n", player->attacco_psichico);
+    printf("Difesa psichica: %d\n", player->difesa_psichica);
+    printf("Fortuna: %d\n", player->fortuna);
+    printf("Zaino: ");
+    int zainoLength = sizeof(player->zaino) / sizeof(player->zaino[0]);
+    char zaino[50] = "";
+    int nessun_oggetto = 1;
+    for (int i = 0; i < zainoLength; i++)
+    {
+        if (player->zaino[i] != nessun_oggetto)
+        {
+            nessun_oggetto = 0;
+            strcat(zaino, oggetto_toString(player->zaino[i]));
+            strcat(zaino, ", ");
+        }
+    }
+
+    if (nessun_oggetto)
+    {
+        strcat(zaino, "Nessun oggetto");
+    }
+    
+    printf("\n");
+    printf("Caratteristica oggetti\n");
+    printf("Bicicletta: passiva = puoi muoverti indipendetemente dalla presenza di nemici\n");
+    printf("Bicicletta: uso in combattimento = evadi un attacco, viene distrutta\n");
+    printf("Baglietta fuocoinferno = aumenta la difesa psichica di 10 punti \n");
+    printf("Bussola = ti dice in quale zona si trova il demotorzone, non viene consumata\n");
+    printf("Schitarrata metallica = aumenta l'attacco psichico di 5 punti \n");
+}
+
+static void passa_turno()
+{
+    passaTurno = 1;
+}
 void gioca()
 {
     printf("Benvenunti in Occhinz \n");
     printf("L'unico vincitore sarà colui che riuscirà a sconfiggere il Demotorzone!\n");
-
+    int c;
     do
     {
-        
+
         genera_ordine_turno();
         printf("Turno %d\n", numTurno);
         printf("Ordine: \n");
         for (int i = 0; i < numGiocatori; i++)
         {
             printf("-> %s", giocatori[ordineTurno[i]].nome);
-            if (i >= numGiocatori)
+            if (i == numGiocatori - 1)
             {
                 printf("\n");
             }
         }
 
-        for (int c = 0; c < numGiocatori; c++)
+        for (c = 0; c < numGiocatori; c++)
         {
-            int azione = 1;
+
             char sceltaGioco[4];
             int sceltaGiocoInt;
             do
             {
+                passaTurno = 0;
+                int azione = 1;
                 printf("Giocatore %s cosa desideri fare?\n", giocatori[ordineTurno[c]].nome);
                 printf("(Puoi scegliere solo una volta per turno se avanzare, indietreggiare o cambiare mondo)\n");
                 printf("1)Avanza\n");
@@ -1157,8 +1317,7 @@ void gioca()
                 case 1:
                     if (azione)
                     {
-                        avanza(giocatori[ordineTurno[c]], &azione);
-                        printf("Zona n.%d, uscita avanza\n", pZona_toNumZona(giocatori[ordineTurno[c]].pos_mondoreale));
+                        avanza(&giocatori[ordineTurno[c]], &azione);
                     }
                     else
                     {
@@ -1166,26 +1325,29 @@ void gioca()
                     }
                     break;
                 case 2:
+
+                    indietreggia(&giocatori[ordineTurno[c]]);
+
+                    break;
+                case 3:
                     if (azione)
                     {
-                        indietreggia(giocatori[ordineTurno[c]], &azione);
+                        cambia_mondo(&giocatori[ordineTurno[c]], &azione);
                     }
                     else
                     {
                         printf("Ti sei già mosso in questo turno\n");
                     }
-                    break;
-                case 3:
-                    // cambia_mondo(giocatori[ordineTurno[c]]);
+
                     break;
                 case 4:
-                    //combatti(giocatori[ordineTurno[c]]);
+                    combatti(&giocatori[ordineTurno[c]]);
                     break;
                 case 5:
-                    // stampa_statistiche(giocatori[ordineTurno[c]]);
+                    stampa_statistiche(&giocatori[ordineTurno[c]]);
                     break;
                 case 6:
-                    stampa_zona_corrente(giocatori[ordineTurno[c]]);
+                    stampa_zona_corrente(&giocatori[ordineTurno[c]]);
                     break;
                 case 7:
                     // raccogli_oggetto(giocatori[ordineTurno[c]]);
@@ -1194,11 +1356,31 @@ void gioca()
                     // utilizza_oggetto(giocatori[ordineTurno[c]]);
                     break;
                 case 9:
-                    printf("Turno passato.\n");
+                    passa_turno();
                     break;
                 }
-            } while (sceltaGiocoInt != 9);
+                if (giocatori[ordineTurno[c]].difesa_psichica <= 0)
+                {
+                    rimuovi_giocatore(&giocatori[ordineTurno[c]]);
+                    passa_turno();
+                }
+
+            } while (!passaTurno || numGiocatori > 0 || esisteDemotorzone);
         }
 
-    } while (!fine);
+        if (numGiocatori == 0)
+        {
+            printf("Tutti i giocatori sono stati sconfitti, il caos trionfa!\n");
+        }
+
+        if (!esisteDemotorzone)
+        {
+            printf("Congratulazioni %s, hai sconfitto Demotorzone! Hai vinto!\n", giocatori[ordineTurno[c]].nome);
+        }
+
+    } while (numGiocatori != 0 && esisteDemotorzone);
+
+    giocatori = NULL;
+    free(giocatori);
+    cancella_mappa();
 }

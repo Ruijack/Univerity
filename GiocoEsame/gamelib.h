@@ -9,9 +9,9 @@ enum Tipo_oggetto {nessun_oggetto, bicicletta, maglietta_fuocoinferno, bussola, 
 enum Tipo_nemico {nessun_nemico, billi, democane, demotorzone};
 /**
  * Statistiche nemici
- * Billi: attacco psichico 5, difesa psichica 15
- * Democane: attacco psichico 6, difesa psichica 20
- * Demotorzone: attacco psichico 8, difesa psichica 50
+ * Billi: attacco psichico 4, difesa psichica 15
+ * Democane: attacco psichico 5, difesa psichica 25
+ * Demotorzone: attacco psichico 7, difesa psichica 50
  */
 enum Tipo_zona {bosco, scuola, laboratorio, caverna, strada, giardino, supermercato, centrale_elettrica, deposito_abbandonato, stazione_polizia};
 
@@ -34,7 +34,7 @@ struct Zona_mondoreale {
 
 struct Giocatore {
     char nome[50];
-    short mondo; // 0 = mondoreale, 1 = soprasotto
+    short mondo; // 0 = mondo sreale, 1 = soprasotto
     struct Zona_mondoreale* pos_mondoreale;
     struct Zona_soprasotto* pos_soprasotto;
     int attacco_psichico;
