@@ -34,7 +34,7 @@ struct Zona_mondoreale {
 
 struct Giocatore {
     char nome[50];
-    short mondo; // 0 = mondo sreale, 1 = soprasotto
+    short mondo; // 0 = mondo reale, 1 = soprasotto
     struct Zona_mondoreale* pos_mondoreale;
     struct Zona_soprasotto* pos_soprasotto;
     int attacco_psichico;
