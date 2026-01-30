@@ -40,15 +40,14 @@ int main()
             {
                 printf("Inizio del gioco!\n");
                 gioca();
+                giocoImpostato = 0;
             }
             break;
         case 3:
-            printf("Termina gioco.\n");
-            //termina_gioco();
+            termina_gioco();
             break;
         case 4:
-            printf("Visualizza crediti.\n");
-            //crediti();
+            crediti();
             break;
         default:
             printf("Scelta non valida, inserire un comando valido.\n");

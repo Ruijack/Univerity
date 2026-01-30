@@ -43,6 +43,15 @@ struct Giocatore {
     enum Tipo_oggetto zaino[3];
 };
 
+struct Vincitore {
+    char nome[50];
+    int attacco_psichico;
+    int difesa_psichica;
+    int fortuna;
+    int numTurno;
+};
+
 void imposta_gioco();
 void gioca();
+void termina_gioco();
 void crediti();

@@ -5,6 +5,7 @@
 #include "gamelib.h"
 
 typedef struct Giocatore Giocatore;
+typedef struct Vincitore Vincitore;
 typedef struct Zona_mondoreale Mondoreale;
 typedef struct Zona_soprasotto Soprasotto;
 typedef enum Tipo_zona zona;
@@ -24,7 +25,6 @@ static Mondoreale *prima_zona_mondoreale;
 static Soprasotto *prima_zona_soprasotto;
 static Giocatore *giocatori;
 static int capienzaZaino = sizeof(giocatori->zaino) / sizeof(giocatori->zaino[0]);
-static char lanciaDado[50];
 static nemico nemicoSconfitto = 0;
 static int esisteVirgola;
 static int esisteDemotorzone = 0;
@@ -37,11 +37,11 @@ static int *ordineTurno;
 
 static void scelta_mappa();
 static void cancella_mappa();
+static void salva_vincitore(Giocatore *player);
 static char *tipo_zona_toString(zona tipo);
 static char *nemico_toString(nemico nemico);
 static char *oggetto_toString(oggetto oggetto);
 static void rimuovi_oggetto(oggetto zaino[], oggetto itemUsato);
-
 // ritorna un numero casuale tra 0 e 4 eccetto l'intero inserito
 // mondo distingue tra mondo reale e soprasotto, 0 = mondoreale, 1 = soprasotto
 static int rand_nemico(int mondo)
@@ -77,14 +77,38 @@ static int rand_nemico(int mondo)
 
     return r;
 }
+static int giocatore_lancia_D20()
+{
+    char buffer[20];
+    do
+    {
+        printf("Inserisci qualsiasi cosa per lanciare il d20... ");
+        fgets(buffer, sizeof(buffer), stdin);
+    } while (isspace(buffer[0]));
+
+    int tiro = rand() % 20 + 1;
+    printf("È uscito: %d\n", tiro);
+    return tiro;
+}
+static void trimma(char *testo)
+{
+    /*conta quante lettere ci sono,
+    quindi tiene conto dell'utima cella dell'array*/
+    int lettere = 0;
+    for (int c = 0; c < strlen(testo); c++)
+    {
+        if (!isspace(testo[c]))
+        {
+            testo[lettere] = testo[c];
+            lettere++;
+        }
+    }
+    testo[lettere] = '\0';
+};
 /**
  * se zona_reale->avanti è == a prima_zona_mondoreale quindi
  * zona_reale è l'ultima zona_reale
  */
-static int lanciaD20()
-{
-    return rand() % 20 + 1;
-}
 static void crea_zona_fine()
 {
     Mondoreale *nuova_zona_reale = (Mondoreale *)malloc(sizeof(Mondoreale));
@@ -562,7 +586,7 @@ static void scelta_attributi(Giocatore *giocatore) // Fatto
 
         giocatore->difesa_psichica += 3;
         giocatore->attacco_psichico -= 3;
-        if (giocatore->attacco_psichico < 0)
+        if (giocatore->attacco_psichico < 1)
         {
             giocatore->attacco_psichico = 1;
         }
@@ -738,16 +762,12 @@ void imposta_gioco() // Fatto
 
         } while (strlen(giocatori[i].nome) < 1 || strlen(giocatori[i].nome) > 51);
 
-        int lunghezzaNome = sizeof(giocatori[i].nome) / sizeof(giocatori[i].nome[0]);
-        if (giocatori[i].nome[lunghezzaNome - 1] == '\n')
-        {
-            giocatori[i].nome[lunghezzaNome - 1] = '\0';
-        }
+        trimma(giocatori[i].nome);
 
         printf("Le tue statistiche verrano generate casualmente (tirando un  D20 per ogni statistica).\n");
-        giocatori[i].attacco_psichico = lanciaD20();
-        giocatori[i].difesa_psichica = lanciaD20();
-        giocatori[i].fortuna = lanciaD20();
+        giocatori[i].attacco_psichico = giocatore_lancia_D20();
+        giocatori[i].difesa_psichica = giocatore_lancia_D20();
+        giocatori[i].fortuna = giocatore_lancia_D20();
 
         giocatori[i].mondo = 0; // Tutti spawnano nel mondo reale
 
@@ -776,14 +796,12 @@ void imposta_gioco() // Fatto
 /**
  * difesa psichica: indica la vita del giocatore/nemico
  * fortuna: indica la possibilità di evadere un attacco
- * evasione: 20% + fortuna
- *
  **/
 // rimescola il vettore ordineTurno ogni volta che è chiamata
 // con interi tra 0 e il numero di giocatori - 1
 static void genera_ordine_turno()
 {
-    ordineTurno = calloc(numGiocatori, sizeof(int));
+
     ordineTurno[0] = rand() % numGiocatori;
     if (numGiocatori > 1)
     {
@@ -963,26 +981,31 @@ static void stampa_zona_corrente(Giocatore *player) // Fatto
 
 static void rimuovi_giocatore(Giocatore *player)
 {
-    numGiocatori--;
-    Giocatore *tempGiocatori = realloc(giocatori, numGiocatori * sizeof(Giocatore));
-    for (int i = 0; i < numGiocatori; i++)
+    if(numGiocatori - 1 > 0)
     {
-        if (&giocatori[i] == player)
+        Giocatore *tempGiocatori = realloc(giocatori, (numGiocatori - 1) * sizeof(Giocatore));
+        for (int i = 0; i < numGiocatori; i++)
         {
-            for (int c = i; c < numGiocatori; c++)
+            if (&giocatori[i] == player)
             {
-                tempGiocatori[c] = giocatori[c + 1];
+                for (int c = i; c < numGiocatori; c++)
+                {
+                    tempGiocatori[c] = giocatori[c + 1];
+                }
+                break;
             }
-            break;
+            else
+            {
+                tempGiocatori[i] = giocatori[i];
+            }
         }
-        else
-        {
-            tempGiocatori[i] = giocatori[i];
-        }
+    
+        
+        giocatori = NULL;
+        free(giocatori);
+        giocatori = tempGiocatori;
     }
-    giocatori = NULL;
-    free(giocatori);
-    giocatori = tempGiocatori;
+    numGiocatori--;
 }
 
 static void combattimento(Giocatore *player, nemico tipoNemico)
@@ -1011,10 +1034,8 @@ static void combattimento(Giocatore *player, nemico tipoNemico)
     {
         // Il giocatore attacca
         printf("Turno del giocatore, per attaccare tira il D20(danno attacco = tiro D20 + attacco psitico)\n");
-        // printf("Premi invio per tirare il dado: ");
-        // fgets(lanciaDado, sizeof(lanciaDado), stdin);
-        int caso = lanciaD20();
-        printf("È uscito: %d\n", caso);
+        int caso = giocatore_lancia_D20();
+        printf("Hai infitto %d danni al nemico\n", caso + player->attacco_psichico);
         psNemico = psNemico - (caso + player->attacco_psichico);
 
         if (psNemico <= 0)
@@ -1022,6 +1043,9 @@ static void combattimento(Giocatore *player, nemico tipoNemico)
             if (tipoNemico == demotorzone)
             {
                 esisteDemotorzone = 0;
+                tipiNemici = 4;
+                salva_vincitore(player);
+                break;
             }
             else
             {
@@ -1088,15 +1112,14 @@ static void combattimento(Giocatore *player, nemico tipoNemico)
             }
             else
             {
-                printf("Puoi ancora salvarti, tira due dadi per provare a schivare.\n");
+                printf("Puoi ancora salvarti, tira due D20 per provare a schivare.\n");
 
-                int dado1 = lanciaD20();
-                int dado2 = lanciaD20();
-                printf("È uscito %d e %d\n", dado1, dado2);
+                int dado1 = giocatore_lancia_D20();
+                int dado2 = giocatore_lancia_D20();
 
                 schivata = dado1 + dado2 + player->fortuna;
-                // Se schivata è minore o uguale a caso, il giocatore schiva l'attacco del nemico
-                printf("Devi fare un numero minore o uguale a %d per schivare, è uscito %d\n", schivata, caso);
+                printf("La tua provbabilità di schivare è %d%%\n", schivata);
+                // Se schivata è minore o uguale a caso(1 a 100), il giocatore schiva l'attacco del nemico
             }
 
             if (caso > schivata)
@@ -1107,7 +1130,6 @@ static void combattimento(Giocatore *player, nemico tipoNemico)
                 {
                     printf("%s è stato sconfitto!\n", player->nome);
                     passaTurno = 1;
-                    break;
                 }
                 else
                 {
@@ -1244,7 +1266,7 @@ static void cambia_mondo(Giocatore *player, int *azione) // Fatto
 
             if (scelta[0] == 'y')
             {
-                int caso = lanciaD20();
+                int caso = giocatore_lancia_D20();
                 *azione = 0;
                 if (caso <= player->fortuna)
                 {
@@ -1327,7 +1349,7 @@ static void stampa_statistiche(Giocatore *player) // Fatto
     printf("Schitarrata metallica = aumenta l'attacco psichico di 5 punti \n");
 }
 
-static void raccogli_oggetto(Giocatore *player)
+static void raccogli_oggetto(Giocatore *player) // Fatto
 {
     oggetto item = player->pos_mondoreale->oggetto;
     int postoVuoto = -1;
@@ -1450,30 +1472,49 @@ static void utilizza_oggetto(Giocatore *player) // Fatto
     }
 }
 
+static void salva_vincitore(Giocatore *player)
+{
+    FILE *vincitoriFile = fopen("vincitori.txt", "wb");
+    if (vincitoriFile == NULL)
+    {
+        printf("Errore nell'apertura del file dei vincitori\n");
+        return;
+    }
+    Vincitore *nuovoVincitore = (Vincitore *)malloc(sizeof(Vincitore));
+    strcpy(nuovoVincitore->nome, player->nome);
+    nuovoVincitore->attacco_psichico = player->attacco_psichico;
+    nuovoVincitore->difesa_psichica = player->difesa_psichica;
+    nuovoVincitore->fortuna = player->fortuna;
+    nuovoVincitore->numTurno = numTurno;
+
+    fwrite(&nuovoVincitore, sizeof(Vincitore), 1, vincitoriFile);
+    fclose(vincitoriFile);
+}
 void gioca()
 {
     printf("Benvenunti in Occhinz \n");
     printf("L'unico vincitore sarà colui che riuscirà a sconfiggere il Demotorzone!\n");
+    ordineTurno = calloc(numGiocatori, sizeof(int));
     int c;
     do
     {
         genera_ordine_turno();
         printf("Turno %d\n", numTurno);
-        printf("Ordine: \n");
+        printf("Ordine: ");
         for (int i = 0; i < numGiocatori; i++)
         {
-            printf("-> %s", giocatori[ordineTurno[i]].nome);
+            printf("-> %s ", giocatori[ordineTurno[i]].nome);
             if (i == numGiocatori - 1)
             {
                 printf("\n");
             }
         }
 
-        for (c = 0; c < numGiocatori; c++)
+        for (c = 0; c < numGiocatori && numGiocatori > 1 && esisteDemotorzone; c++)
         {
             int azione = 1;
-            char sceltaGioco[4];
-            int sceltaGiocoInt;
+            char sceltaGioco[4] = "";
+            int sceltaGiocoInt = 0;
             passaTurno = 0;
             do
             {
@@ -1572,25 +1613,69 @@ void gioca()
 
             } while (!passaTurno && giocatori[ordineTurno[c]].difesa_psichica > 0 && numGiocatori > 0 && esisteDemotorzone);
         }
-
-        if (giocatori[ordineTurno[c]].difesa_psichica <= 0)
-        {
-            rimuovi_giocatore(&giocatori[ordineTurno[c]]);
+        for (int i = 0; i < numGiocatori; i++)
+        { 
+            if (giocatori[ordineTurno[i]].difesa_psichica <= 0)
+            {
+                rimuovi_giocatore(&giocatori[ordineTurno[i]]);
+            }
         }
         
+
         if (numGiocatori == 0)
         {
             printf("Tutti i giocatori sono stati sconfitti, il caos trionfa!\n");
+            break;
         }
 
         if (!esisteDemotorzone)
         {
             printf("Congratulazioni %s, hai sconfitto Demotorzone! Hai vinto!\n", giocatori[ordineTurno[c]].nome);
+            break;
         }
 
-    } while (numGiocatori != 0 && esisteDemotorzone);
+    } while (numGiocatori > 0 && esisteDemotorzone);
 
     giocatori = NULL;
     free(giocatori);
     cancella_mappa();
+}
+
+void termina_gioco()
+{
+    printf("Grazie per aver giocato a Cosestrane!\n");
+}
+void crediti()
+{
+    printf("Gioco sviluppato da: Rui jian Hu, \n");
+    printf("Per l'esame di Programmazione Procedurale 2025/2026\n");
+
+    FILE *vincitoriFile = fopen("vincitori.txt", "rb");
+    if (vincitoriFile != NULL)
+    {
+        int n;
+        fread(&n, sizeof(int), 1, vincitoriFile);
+        if (n < 0)
+        {
+            if (n > 3)
+            {
+                n = 3;
+            }
+            printf("Ultimi vincitori:\n");
+            Vincitore *vincitore = calloc(3, sizeof(Vincitore));
+            fread(vincitore, sizeof(Vincitore), n, vincitoriFile);
+
+            for (int i = 0; i < n && !feof(vincitoriFile); i++)
+            {
+                printf("Nome: %s\n", vincitore[i].nome);
+                printf("Attacco psichico: %d\n", vincitore[i].attacco_psichico);
+                printf("Difesa psichica: %d\n", vincitore[i].difesa_psichica);
+                printf("Fortuna: %d\n", vincitore[i].fortuna);
+                printf("Turni impiegati per vincere: %d\n", vincitore[i].numTurno);
+                printf("\n");
+            }
+            free(vincitore);
+        }
+        fclose(vincitoriFile);
+    }
 }
