@@ -981,7 +981,7 @@ static void stampa_zona_corrente(Giocatore *player) // Fatto
 
 static void rimuovi_giocatore(Giocatore *player)
 {
-    if(numGiocatori - 1 > 0)
+    if (numGiocatori - 1 > 0)
     {
         Giocatore *tempGiocatori = realloc(giocatori, (numGiocatori - 1) * sizeof(Giocatore));
         for (int i = 0; i < numGiocatori; i++)
@@ -999,12 +999,17 @@ static void rimuovi_giocatore(Giocatore *player)
                 tempGiocatori[i] = giocatori[i];
             }
         }
-    
-        
+
         giocatori = NULL;
         free(giocatori);
         giocatori = tempGiocatori;
     }
+    else
+    {
+        giocatori = NULL;
+        free(giocatori);
+    }
+
     numGiocatori--;
 }
 
@@ -1118,7 +1123,7 @@ static void combattimento(Giocatore *player, nemico tipoNemico)
                 int dado2 = giocatore_lancia_D20();
 
                 schivata = dado1 + dado2 + player->fortuna;
-                printf("La tua provbabilità di schivare è %d%%\n", schivata);
+                printf("La tua probabilità di schivare è %d%%\n", schivata);
                 // Se schivata è minore o uguale a caso(1 a 100), il giocatore schiva l'attacco del nemico
             }
 
@@ -1126,7 +1131,7 @@ static void combattimento(Giocatore *player, nemico tipoNemico)
             {
                 printf("Sei stato colpito!\n");
                 player->difesa_psichica = player->difesa_psichica - paNemico;
-                if (player->difesa_psichica <= 0)
+                if (player->difesa_psichica < 1)
                 {
                     printf("%s è stato sconfitto!\n", player->nome);
                     passaTurno = 1;
@@ -1143,7 +1148,7 @@ static void combattimento(Giocatore *player, nemico tipoNemico)
             }
         }
 
-    } while (psNemico >= 1 && player->difesa_psichica >= 1);
+    } while (psNemico > 0 && player->difesa_psichica > 0);
 }
 
 static void combatti(Giocatore *player)
@@ -1255,14 +1260,14 @@ static void cambia_mondo(Giocatore *player, int *azione) // Fatto
             char scelta[2];
             do
             {
-                printf("Vuoi rischiare (La tua fortuna è %d)? (y/n) ", player->fortuna);
+                printf("Vuoi rischiare (La tua fortuna è %d)? (y/n): ", player->fortuna);
                 fgets(scelta, sizeof(scelta), stdin);
-                if (scelta[0] != 'y' || scelta[0] != 'n')
+                if (scelta[0] != 'y' && scelta[0] != 'n')
                 {
                     printf("Inserire una scelta valida, per favore\n");
                 }
 
-            } while (scelta[0] != 'y' || scelta[0] != 'n');
+            } while (scelta[0] != 'y' && scelta[0] != 'n');
 
             if (scelta[0] == 'y')
             {
@@ -1494,23 +1499,23 @@ void gioca()
 {
     printf("Benvenunti in Occhinz \n");
     printf("L'unico vincitore sarà colui che riuscirà a sconfiggere il Demotorzone!\n");
-    ordineTurno = calloc(numGiocatori, sizeof(int));
-    int c;
     do
     {
+        ordineTurno = calloc(numGiocatori, sizeof(int));
         genera_ordine_turno();
         printf("Turno %d\n", numTurno);
         printf("Ordine: ");
-        for (int i = 0; i < numGiocatori; i++)
+        printf("%s ", giocatori[ordineTurno[0]].nome);
+        if (numGiocatori > 1)
         {
-            printf("-> %s ", giocatori[ordineTurno[i]].nome);
-            if (i == numGiocatori - 1)
+            for (int i = 1; i < numGiocatori; i++)
             {
-                printf("\n");
+                printf("-> %s ", giocatori[ordineTurno[i]].nome);
             }
         }
+        printf("\n");
 
-        for (c = 0; c < numGiocatori && numGiocatori > 1 && esisteDemotorzone; c++)
+        for (int c = 0; c < numGiocatori && numGiocatori > 0 && esisteDemotorzone; c++)
         {
             int azione = 1;
             char sceltaGioco[4] = "";
@@ -1611,26 +1616,25 @@ void gioca()
                     break;
                 }
 
-            } while (!passaTurno && giocatori[ordineTurno[c]].difesa_psichica > 0 && numGiocatori > 0 && esisteDemotorzone);
+                if (!esisteDemotorzone)
+                {
+                    printf("Congratulazioni %s, hai sconfitto il Demotorzone! Hai vinto!\n", giocatori[ordineTurno[c]].nome);
+                    break;
+                }
+            } while (!passaTurno && numGiocatori > 0 && esisteDemotorzone);
         }
-        for (int i = 0; i < numGiocatori; i++)
-        { 
+        printf("Num giocatori %d\n", numGiocatori);
+        for (int i = 0, numGiocatoriIniziali = numGiocatori; i < numGiocatoriIniziali; i++)
+        {
             if (giocatori[ordineTurno[i]].difesa_psichica <= 0)
             {
                 rimuovi_giocatore(&giocatori[ordineTurno[i]]);
             }
         }
-        
-
+        printf("Num giocatori %d\n", numGiocatori);
         if (numGiocatori == 0)
         {
             printf("Tutti i giocatori sono stati sconfitti, il caos trionfa!\n");
-            break;
-        }
-
-        if (!esisteDemotorzone)
-        {
-            printf("Congratulazioni %s, hai sconfitto Demotorzone! Hai vinto!\n", giocatori[ordineTurno[c]].nome);
             break;
         }
 
