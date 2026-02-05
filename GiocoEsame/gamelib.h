@@ -49,6 +49,7 @@ struct Vincitore {
     int difesa_psichica;
     int fortuna;
     int numTurno;
+    char data_vittoria[20];
 };
 
 void imposta_gioco();

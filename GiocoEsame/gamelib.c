@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <ctype.h>
 #include "gamelib.h"
 
@@ -735,11 +736,11 @@ void imposta_gioco() // Fatto
     esisteVirgola = 0;
     giocatori = NULL;
     giocatori = (Giocatore *)calloc(4, sizeof(Giocatore));
-    printf("Inserire il numero di giocatori (max 4): ");
 
     char num_giocatoriChar[4];
     do
     {
+        printf("Inserire il numero di giocatori (max 4): ");
         fgets(num_giocatoriChar, sizeof(num_giocatoriChar), stdin);
         numGiocatori = (int)strtol(num_giocatoriChar, NULL, 10);
 
@@ -1421,10 +1422,10 @@ static void utilizza_oggetto(Giocatore *player) // Fatto
     }
     else
     {
-
+        printf("Zaino:\n");
         for (int c = 0; c < capienzaZaino && player->zaino[c] != nessun_oggetto; c++)
         {
-            printf("Zaino:\n");
+
             if (player->zaino[c] != nessun_oggetto)
             {
                 printf("%d)%s\n", c + 1, oggetto_toString(player->zaino[c]));
@@ -1479,20 +1480,52 @@ static void utilizza_oggetto(Giocatore *player) // Fatto
 
 static void salva_vincitore(Giocatore *player)
 {
-    FILE *vincitoriFile = fopen("vincitori.txt", "wb");
+    FILE *vincitoriFile = fopen("vincitori.txt", "a");
     if (vincitoriFile == NULL)
     {
         printf("Errore nell'apertura del file dei vincitori\n");
         return;
     }
+    time_t now = time(NULL);
+    struct tm *t = localtime(&now);
+    char data_ora[100];
+    strftime(data_ora, sizeof(data_ora), "%d-%m-%Y %H:%M:%S", t);
+
     Vincitore *nuovoVincitore = (Vincitore *)malloc(sizeof(Vincitore));
-    strcpy(nuovoVincitore->nome, player->nome);
+    char sceltaNick[2], nick[50];
+    printf("Vuoi inserire un nickname per la classifica? (y/n): ");
+    do
+    {
+        fgets(sceltaNick, sizeof(sceltaNick), stdin);
+        if (sceltaNick[0] != 'y' && sceltaNick[0] != 'n')
+        {
+            printf("Inserire un valore valido, per favore.\n");
+        }
+    } while (sceltaNick[0] != 'y' && sceltaNick[0] != 'n');
+    if (sceltaNick[0] == 'y')
+    {
+        printf("Inserisci il nickname: ");
+        fgets(nick, sizeof(nick), stdin);
+        trimma(nick);
+        strcpy(nuovoVincitore->nome, nick);
+    }
+    else
+    {
+        strcpy(nuovoVincitore->nome, player->nome);
+    }
     nuovoVincitore->attacco_psichico = player->attacco_psichico;
     nuovoVincitore->difesa_psichica = player->difesa_psichica;
     nuovoVincitore->fortuna = player->fortuna;
     nuovoVincitore->numTurno = numTurno;
+    strcpy(nuovoVincitore->data_vittoria, data_ora);
 
-    fwrite(&nuovoVincitore, sizeof(Vincitore), 1, vincitoriFile);
+    fprintf(vincitoriFile, "%s;%d;%d;%d;%d;%s\n",
+            nuovoVincitore->nome,
+            nuovoVincitore->attacco_psichico,
+            nuovoVincitore->difesa_psichica,
+            nuovoVincitore->fortuna,
+            nuovoVincitore->numTurno,
+            nuovoVincitore->data_vittoria);
     fclose(vincitoriFile);
 }
 void gioca()
@@ -1623,7 +1656,6 @@ void gioca()
                 }
             } while (!passaTurno && numGiocatori > 0 && esisteDemotorzone);
         }
-        printf("Num giocatori %d\n", numGiocatori);
         for (int i = 0, numGiocatoriIniziali = numGiocatori; i < numGiocatoriIniziali; i++)
         {
             if (giocatori[ordineTurno[i]].difesa_psichica <= 0)
@@ -1631,7 +1663,6 @@ void gioca()
                 rimuovi_giocatore(&giocatori[ordineTurno[i]]);
             }
         }
-        printf("Num giocatori %d\n", numGiocatori);
         if (numGiocatori == 0)
         {
             printf("Tutti i giocatori sono stati sconfitti, il caos trionfa!\n");
@@ -1654,32 +1685,42 @@ void crediti()
     printf("Gioco sviluppato da: Rui jian Hu, \n");
     printf("Per l'esame di Programmazione Procedurale 2025/2026\n");
 
-    FILE *vincitoriFile = fopen("vincitori.txt", "rb");
+    FILE *vincitoriFile = fopen("vincitori.txt", "r");
     if (vincitoriFile != NULL)
     {
-        int n;
-        fread(&n, sizeof(int), 1, vincitoriFile);
-        if (n < 0)
+        Vincitore vincitori[100];
+        int n = 0;
+        while (fscanf(vincitoriFile, "%49[^;];%d;%d;%d;%d;%19[^\n]\n",
+                      vincitori[n].nome,
+                      &vincitori[n].attacco_psichico,
+                      &vincitori[n].difesa_psichica,
+                      &vincitori[n].fortuna,
+                      &vincitori[n].numTurno,
+                      vincitori[n].data_vittoria) == 6)
         {
-            if (n > 3)
+            n++;
+            if (n >= 100)
             {
-                n = 3;
+                break;
             }
-            printf("Ultimi vincitori:\n");
-            Vincitore *vincitore = calloc(3, sizeof(Vincitore));
-            fread(vincitore, sizeof(Vincitore), n, vincitoriFile);
-
-            for (int i = 0; i < n && !feof(vincitoriFile); i++)
-            {
-                printf("Nome: %s\n", vincitore[i].nome);
-                printf("Attacco psichico: %d\n", vincitore[i].attacco_psichico);
-                printf("Difesa psichica: %d\n", vincitore[i].difesa_psichica);
-                printf("Fortuna: %d\n", vincitore[i].fortuna);
-                printf("Turni impiegati per vincere: %d\n", vincitore[i].numTurno);
-                printf("\n");
-            }
-            free(vincitore);
         }
+
+        int inizioIndice = n - 3;
+        if (inizioIndice < 0)
+        {
+            inizioIndice = 0;
+        }
+
+        printf("\n--- Ultimi Vincitori ---\n");
+
+        for (int i = inizioIndice; i < n; i++)
+        {
+            printf("Nome: %s\n", vincitori[i].nome);
+            printf("Data: %s\n", vincitori[i].data_vittoria);
+            printf("Turno vittoria: %d\n", vincitori[i].numTurno);
+            printf("------------------\n");
+        }
+
         fclose(vincitoriFile);
     }
 }
