@@ -11,7 +11,7 @@ enum Tipo_nemico {nessun_nemico, billi, democane, demotorzone};
  * Statistiche nemici
  * Billi: attacco psichico 3, difesa psichica 20
  * Democane: attacco psichico 5, difesa psichica 30
- * Demotorzone: attacco psichico 7, difesa psichica 60
+ * Demotorzone: attacco psichico 8, difesa psichica 60
  */
 enum Tipo_zona {bosco, scuola, laboratorio, caverna, strada, giardino, supermercato, centrale_elettrica, deposito_abbandonato, stazione_polizia};
 
@@ -37,9 +37,9 @@ struct Giocatore {
     short mondo; // 0 = mondo reale, 1 = soprasotto
     struct Zona_mondoreale* pos_mondoreale;
     struct Zona_soprasotto* pos_soprasotto;
-    int attacco_psichico;
-    int difesa_psichica;
-    int fortuna;
+    int attacco_psichico;   //punti attacco del giocatore/nemico
+    int difesa_psichica;    //punti vita del giocatore/nemico
+    int fortuna;            //indica la possibilità di evadere un attacco
     enum Tipo_oggetto zaino[3];
 };
 

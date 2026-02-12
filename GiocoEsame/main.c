@@ -12,7 +12,7 @@ int main()
     int giocoImpostato = 0;
     do
     {
-        printf("------CoseStrane------\n");
+        printf("\n------CoseStrane------\n");
         printf("1)Imposta gioco\n");
         printf("2)Gioca\n");
         printf("3)Esci\n");
