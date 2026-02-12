@@ -3,15 +3,15 @@ enum Tipo_oggetto {nessun_oggetto, bicicletta, maglietta_fuocoinferno, bussola, 
  * bicicletta: passiva = puoi muoverti indipendetemente dalla presenza di nemici
  * bicicletta: uso in combattimento = evadi un attacco, viene distrutta
  * maglietta_fuocoinferno: aumenta la difesa psichica di 10 punti 
- * bussola: ti dice in quale zona si trova il demotorzone, non viene consumata
+ * bussola: ti dice in quale zona si trova il demotorzone
  * schitarrata_metallica: aumenta l'attacco psichico di 5 punti 
  */
 enum Tipo_nemico {nessun_nemico, billi, democane, demotorzone};
 /**
  * Statistiche nemici
- * Billi: attacco psichico 4, difesa psichica 15
- * Democane: attacco psichico 5, difesa psichica 25
- * Demotorzone: attacco psichico 7, difesa psichica 50
+ * Billi: attacco psichico 3, difesa psichica 20
+ * Democane: attacco psichico 5, difesa psichica 30
+ * Demotorzone: attacco psichico 7, difesa psichica 60
  */
 enum Tipo_zona {bosco, scuola, laboratorio, caverna, strada, giardino, supermercato, centrale_elettrica, deposito_abbandonato, stazione_polizia};
 

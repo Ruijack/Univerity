@@ -7,14 +7,12 @@ int main()
 {
     time_t t;
     srand((unsigned)time(&t));
-    // printf("Benvenuto giocatore!\n");
-    // printf("Sarai pronto per affrontare l'avventura in Occhinz?\n");
     char scelta[4];
     int sceltaInt;
     int giocoImpostato = 0;
     do
     {
-        printf("      CoseStrane\n");
+        printf("------CoseStrane------\n");
         printf("1)Imposta gioco\n");
         printf("2)Gioca\n");
         printf("3)Esci\n");
@@ -23,7 +21,7 @@ int main()
         printf("Inserisci il comando: ");
         fgets(scelta, sizeof(scelta), stdin);
 
-        sceltaInt = (int)strtol(scelta, NULL, 10);
+        sceltaInt = (int) strtol(scelta, NULL, 10);
         switch (sceltaInt)
         {
         case 1:

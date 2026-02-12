@@ -15,10 +15,10 @@ typedef enum Tipo_oggetto oggetto;
 
 static const int tipiZone = 10;
 static const int tipiOggetti = 5;
-static const int psBilli = 15;
+static const int psBilli = 20;
 static const int psDemocane = 25;
 static const int psDemotorzone = 50;
-static const int paBilli = 4;
+static const int paBilli = 3;
 static const int paDemocane = 5;
 static const int paDemotorzone = 8;
 
@@ -88,7 +88,7 @@ static int giocatore_lancia_D20()
     } while (isspace(buffer[0]));
 
     int tiro = rand() % 20 + 1;
-    printf("È uscito: %d\n", tiro);
+    printf("È uscito: %d\n\n", tiro);
     return tiro;
 }
 static void trimma(char *testo)
@@ -176,8 +176,20 @@ static void crea_mappa() // Fatto
     printf("Mappa creata con successo!\n");
     scelta_mappa();
 }
-static void inserisci_zona(int posto) // Fatto
+static void inserisci_zona() // Fatto
 {
+    char posto[4];
+    int postoInt;
+    do
+    {
+        printf("Inserisci la posizione della nuova zona (zone attuali %d, prima zona = 1): ", numZone);
+        fgets(posto, sizeof(posto), stdin);
+        postoInt = (int)strtol(posto, NULL, 10);
+        if (postoInt < 0 || postoInt > numZone + 1)
+        {
+            printf("Posizione non valida. Riprova.\n");
+        }
+    } while (postoInt < 0 || postoInt > numZone + 1);
     // Scelta tipo zona
     printf("Che tipo di zona sarà?\n");
     for (int c = 0; c < tipiZone; c++)
@@ -200,7 +212,7 @@ static void inserisci_zona(int posto) // Fatto
 
     // Scelta nemico mondo reale
     printf("Ci sarà un nemico nel mondo reale?(y/n)\n");
-    char esisteNemicoReale[4];
+    char esisteNemicoReale[2];
     int nemicoReale;
     do
     {
@@ -218,8 +230,8 @@ static void inserisci_zona(int posto) // Fatto
             printf("Scelta non valida. Riprova.\n");
             break;
         }
-    } while (tolower(esisteNemicoReale[0]) != 'y' || tolower(esisteNemicoReale[0]) != 'n');
-
+    } while (tolower(esisteNemicoReale[0]) != 'y' && tolower(esisteNemicoReale[0]) != 'n');
+    printf("\n");
     // Scelta nemico soprasotto
     printf("Ci sarà un nemico nel soprasotto?(y/n)\n");
     char esisteNemicoSoprasotto[4];
@@ -228,52 +240,56 @@ static void inserisci_zona(int posto) // Fatto
     {
         printf("Inserisci la tua scelta: ");
         fgets(esisteNemicoSoprasotto, sizeof(esisteNemicoSoprasotto), stdin);
-        switch (tolower(esisteNemicoSoprasotto[0]))
+        if (tolower(esisteNemicoSoprasotto[0]) != 'y' && tolower(esisteNemicoSoprasotto[0]) != 'n')
         {
-        case 'y':
-            if (esisteDemotorzone)
-            {
-                printf("Il nemico nel soprasotto sarà un Democane (esiste già un Demotorzone).\n");
-                nemicoSoprasotto = 2;
-            }
-            else
-            {
-                printf("Che tipo di demone sarà?\n");
-                printf("1) Democane\n");
-                printf("2) Demotorzone\n");
-                char sceltaNemico[4];
-                int sceltaNemicoInt;
-                do
-                {
-
-                    printf("Inserisci il numero corrispondente al tipo di demone: ");
-                    fgets(sceltaNemico, sizeof(sceltaNemico), stdin);
-                    sceltaNemicoInt = (int)strtol(sceltaNemico, NULL, 10);
-                    switch (sceltaNemicoInt)
-                    {
-                    case 1:
-                        nemicoSoprasotto = 2;
-                        break;
-                    case 2:
-                        nemicoSoprasotto = 3;
-                        esisteDemotorzone = 1;
-                        tipiNemici = 3;
-                        break;
-                    default:
-                        printf("Scelta non valida. Riprova.\n");
-                        break;
-                    }
-                } while (sceltaNemicoInt < 1 || sceltaNemicoInt > 2);
-            }
-        case 'n':
-            nemicoSoprasotto = 0;
-            break;
-        default:
             printf("Scelta non valida. Riprova.\n");
-            break;
         }
-    } while (tolower(esisteNemicoSoprasotto[0]) != 'y' || tolower(esisteNemicoSoprasotto[0]) != 'n');
 
+    } while (tolower(esisteNemicoSoprasotto[0]) != 'y' && tolower(esisteNemicoSoprasotto[0]) != 'n');
+    printf("\n");
+    switch (tolower(esisteNemicoSoprasotto[0]))
+    {
+    case 'y':
+        if (esisteDemotorzone)
+        {
+            printf("Il nemico nel soprasotto sarà un Democane (esiste già un Demotorzone).\n");
+            nemicoSoprasotto = 2;
+        }
+        else
+        {
+            printf("Che tipo di demone sarà?\n");
+            printf("1) Democane\n");
+            printf("2) Demotorzone\n");
+            char sceltaNemico[4];
+            int sceltaNemicoInt;
+            do
+            {
+                printf("Inserisci il numero corrispondente al tipo di demone: ");
+                fgets(sceltaNemico, sizeof(sceltaNemico), stdin);
+                sceltaNemicoInt = (int)strtol(sceltaNemico, NULL, 10);
+                switch (sceltaNemicoInt)
+                {
+                case 1:
+                    nemicoSoprasotto = 2;
+                    break;
+                case 2:
+                    nemicoSoprasotto = 3;
+                    esisteDemotorzone = 1;
+                    tipiNemici = 3;
+                    break;
+                default:
+                    printf("Scelta non valida. Riprova.\n");
+                    break;
+                }
+            } while (sceltaNemicoInt < 1 || sceltaNemicoInt > 2);
+        }
+    case 'n':
+        nemicoSoprasotto = 0;
+        break;
+    default:
+        break;
+    }
+    printf("\n");
     // Scelta oggetto
     printf("Che oggetto ci sarà nella zona del mondo reale?\n");
     for (int c = 0; c < tipiOggetti; c++)
@@ -306,7 +322,7 @@ static void inserisci_zona(int posto) // Fatto
     nuova_zona_soprasotto->link_mondoreale = nuova_zona_reale;
 
     // Inserimento nuova zona nella mappa
-    if (posto == 1)
+    if (postoInt == 1)
     {
         prima_zona_mondoreale = nuova_zona_reale;
         prima_zona_mondoreale->avanti = prima_zona_mondoreale;
@@ -325,9 +341,9 @@ static void inserisci_zona(int posto) // Fatto
     else
     {
         Mondoreale *pScan_reale = prima_zona_mondoreale;
-        for (int c = 1; c < posto; c++)
+        for (int c = 1; c < postoInt; c++)
         {
-            if (c != posto)
+            if (c != postoInt)
             {
                 pScan_reale = pScan_reale->avanti;
             }
@@ -347,7 +363,6 @@ static void inserisci_zona(int posto) // Fatto
     }
     printf("Zona inserita con successo!\n");
     numZone++;
-    scelta_mappa();
 }
 static void cancella_zona(int posto) // Fatto
 {
@@ -389,7 +404,6 @@ static void cancella_zona(int posto) // Fatto
 
     printf("Zona cancellata con successo!\n");
     numZone--;
-    scelta_mappa();
 }
 static char *tipo_zona_toString(zona tipo)
 {
@@ -500,8 +514,6 @@ static void stampa_mappa() // Fatto
         } while (pScan_sotto != prima_zona_soprasotto);
         break;
     }
-
-    scelta_mappa();
 }
 static void stampa_zona() // Fatto
 {
@@ -555,6 +567,19 @@ static void chiudi_mappa() // Fatto
 }
 static void scelta_attributi(Giocatore *giocatore) // Fatto
 {
+    printf("Puoi anche scegliere tra questi modificatori:\n");
+    printf("(ATTENZIONE ogni statistica non puo' scendere sotto a 1 o superare 20)\n");
+    printf("1)Attacco_psichico +3 punti e difesa_psichica -3 punti.\n");
+    printf("2)Difesa_psichica +3 punti e attacco_psichico -3 punti.\n");
+    printf("3)Sto bene così.\n");
+
+    if (!esisteVirgola)
+    {
+        printf("4)Diventa UndiciVirgolaCinque (attacco_psichico e difesa_psichica +4, fortuna -7).\n");
+        printf("Attenzione: il tuo nome verra cambiano in UndiciVirgolaCinque e solo un giocatore per partita può fare questa scelta.\n");
+    }
+    printf("\n");
+
     char sceltaModificatore[4];
     int sceltaModificatoreInt;
     do
@@ -626,8 +651,9 @@ static void scelta_attributi(Giocatore *giocatore) // Fatto
 }
 static void scelta_mappa() // Fatto
 {
+    int mappaGenerata = 0;
     char scelta[4];
-    static int sceltaInt;
+    int sceltaInt;
     do
     {
         printf("1)Genera mappa in maniera casuale\n");
@@ -635,8 +661,7 @@ static void scelta_mappa() // Fatto
         printf("3)Cancella zona, in una posizione a scelta\n");
         printf("4)Stampa la mappa\n");
         printf("5)Stampa zona singola\n");
-        printf("6)Esci dalla creazione della mappa\n");
-
+        printf("6)Esci dalla creazione della mappa\n\n");
         do
         {
             printf("Inserisci la tua scelta: ");
@@ -654,22 +679,19 @@ static void scelta_mappa() // Fatto
         case 1:
             cancella_mappa();
             crea_mappa();
+            mappaGenerata = 1;
+            printf("\n");
             break;
         case 2:
-            char posto[4];
-            int postoInt;
-            do
+            if (mappaGenerata)
             {
-                printf("Inserisci la posizione in cui vuoi inserire la nuova zona (zone attuali %d): ", numZone);
-                fgets(posto, sizeof(posto), stdin);
-                postoInt = (int)strtol(posto, NULL, 10);
-                if (postoInt < 1 || postoInt > numZone)
-                {
-                    printf("Posizione non valida. Riprova.\n");
-                }
-            } while (postoInt < 1 || postoInt > numZone);
-
-            inserisci_zona(postoInt);
+                inserisci_zona();
+                printf("\n");
+            }
+            else
+            {
+                printf("Genera prima la mappa, per inserire le zone singolarmente\n");
+            }
             break;
         case 3:
             char postoCancellare[4];
@@ -682,7 +704,7 @@ static void scelta_mappa() // Fatto
             {
                 do
                 {
-                    printf("Inserisci la posizione della zona che vuoi cancellare, prima zona = 1 (zone attuali %d): ", numZone);
+                    printf("Inserisci la posizione della zona da cancellare (zone attuali %d, prima zona = 1): ", numZone);
                     fgets(postoCancellare, sizeof(postoCancellare), stdin);
                     postoCancellareInt = (int)strtol(postoCancellare, NULL, 10);
                     if (postoCancellareInt < 1 || postoCancellareInt > numZone)
@@ -692,19 +714,23 @@ static void scelta_mappa() // Fatto
                 } while (postoCancellareInt < 1 || postoCancellareInt > numZone);
                 cancella_zona(postoCancellareInt);
             }
-
+            printf("\n");
             break;
         case 4:
             stampa_mappa();
+            printf("\n");
             break;
         case 5:
             stampa_zona();
+            printf("\n");
             break;
         case 6:
             chiudi_mappa();
+            printf("\n");
             break;
         }
-    } while (sceltaInt != 6 && !esisteDemotorzone && numZone <= 15);
+    } while (sceltaInt != 6 || !esisteDemotorzone || numZone < 15);
+    printf("\n");
 }
 static void cancella_mappa()
 {
@@ -774,23 +800,13 @@ void imposta_gioco() // Fatto
 
         printf("Il tuo attacco psichico è: %d\n", giocatori[i].attacco_psichico);
         printf("La tua difesa psichica è: %d\n", giocatori[i].difesa_psichica);
-        printf("La tua fortuna è: %d\n", giocatori[i].fortuna);
+        printf("La tua fortuna è: %d\n\n", giocatori[i].fortuna);
 
-        printf("Puoi anche scegliere tra questi modificatori:\n");
-        printf("(ATTENZIONE ogni statistica non puo' scendere sotto a 1 o superare 20)\n");
-        printf("1)Attacco_psichico +3 punti e difesa_psichica -3 punti.\n");
-        printf("2)Difesa_psichica +3 punti e attacco_psichico -3 punti.\n");
-        printf("3)Sto bene così.\n");
-
-        if (!esisteVirgola)
-        {
-            printf("4)Diventa UndiciVirgolaCinque (attacco_psichico e difesa_psichica +4, fortuna -7).\n");
-            printf("Attenzione: il tuo nome verra cambiano in UndiciVirgolaCinque e solo un giocatore per partita può fare questa scelta.\n");
-        }
         scelta_attributi(&(giocatori[i]));
+        printf("Giocatore creato con successo\n");
     }
 
-    printf("Ora può scegliere come creare la mappa di gioco:\n");
+    printf("\nOra puoi scegliere come creare la mappa di gioco:\n");
     scelta_mappa();
 }
 
@@ -825,7 +841,6 @@ static void genera_ordine_turno()
     }
     numTurno++;
 }
-
 static int pZona_toNumZona(Mondoreale *pZona) // prima zona = 1
 {
     Mondoreale *pScan = prima_zona_mondoreale;
@@ -843,7 +858,6 @@ static int pZona_toNumZona(Mondoreale *pZona) // prima zona = 1
     }
     return c + 1;
 }
-
 static int possiede_bici(oggetto zaino[])
 {
     int possiedeBici = 0;
@@ -856,6 +870,40 @@ static int possiede_bici(oggetto zaino[])
     }
     return possiedeBici;
 }
+static void rimuovi_giocatore(Giocatore *player)
+{
+    if (numGiocatori - 1 > 0)
+    {
+        Giocatore *tempGiocatori = realloc(giocatori, (numGiocatori - 1) * sizeof(Giocatore));
+        for (int i = 0; i < numGiocatori; i++)
+        {
+            if (&giocatori[i] == player)
+            {
+                for (int c = i; c < numGiocatori; c++)
+                {
+                    tempGiocatori[c] = giocatori[c + 1];
+                }
+                break;
+            }
+            else
+            {
+                tempGiocatori[i] = giocatori[i];
+            }
+        }
+
+        giocatori = NULL;
+        free(giocatori);
+        giocatori = tempGiocatori;
+    }
+    else
+    {
+        giocatori = NULL;
+        free(giocatori);
+    }
+
+    numGiocatori--;
+}
+
 static void avanza(Giocatore *player, int *azione) // Fatto
 {
     if (pZona_toNumZona(player->pos_mondoreale) == numZone)
@@ -916,7 +964,6 @@ static void avanza(Giocatore *player, int *azione) // Fatto
         }
     }
 }
-
 static void indietreggia(Giocatore *player) // Fatto
 {
     int esisteNemico = 0;
@@ -960,7 +1007,6 @@ static void indietreggia(Giocatore *player) // Fatto
         }
     }
 }
-
 static void stampa_zona_corrente(Giocatore *player) // Fatto
 {
     if (player->mondo == 0)
@@ -979,41 +1025,6 @@ static void stampa_zona_corrente(Giocatore *player) // Fatto
         printf("Nemico: %s\n", nemico_toString(zona_corrente->nemico));
     }
 }
-
-static void rimuovi_giocatore(Giocatore *player)
-{
-    if (numGiocatori - 1 > 0)
-    {
-        Giocatore *tempGiocatori = realloc(giocatori, (numGiocatori - 1) * sizeof(Giocatore));
-        for (int i = 0; i < numGiocatori; i++)
-        {
-            if (&giocatori[i] == player)
-            {
-                for (int c = i; c < numGiocatori; c++)
-                {
-                    tempGiocatori[c] = giocatori[c + 1];
-                }
-                break;
-            }
-            else
-            {
-                tempGiocatori[i] = giocatori[i];
-            }
-        }
-
-        giocatori = NULL;
-        free(giocatori);
-        giocatori = tempGiocatori;
-    }
-    else
-    {
-        giocatori = NULL;
-        free(giocatori);
-    }
-
-    numGiocatori--;
-}
-
 static void combattimento(Giocatore *player, nemico tipoNemico)
 {
     int psNemico, paNemico;
@@ -1035,7 +1046,6 @@ static void combattimento(Giocatore *player, nemico tipoNemico)
     default:
         break;
     }
-
     do
     {
         // Il giocatore attacca
@@ -1151,7 +1161,6 @@ static void combattimento(Giocatore *player, nemico tipoNemico)
 
     } while (psNemico > 0 && player->difesa_psichica > 0);
 }
-
 static void combatti(Giocatore *player)
 {
     int esisteNemico = 0;
@@ -1213,7 +1222,6 @@ static void combatti(Giocatore *player)
         printf("Non c'è un nemico in questa zona\n");
     }
 }
-
 static void cambia_mondo(Giocatore *player, int *azione) // Fatto
 {
     int esisteNemico = 0;
@@ -1318,7 +1326,6 @@ static void cambia_mondo(Giocatore *player, int *azione) // Fatto
         }
     }
 }
-
 static void stampa_statistiche(Giocatore *player) // Fatto
 {
     printf("Statistiche di %s:\n", player->nome);
@@ -1346,13 +1353,13 @@ static void stampa_statistiche(Giocatore *player) // Fatto
     {
         strcat(zaino, "Nessun oggetto");
     }
-    printf("%s\n", zaino);
+    printf("%s\n\n", zaino);
     printf("Caratteristica oggetti\n");
     printf("Bicicletta: passiva = puoi muoverti indipendetemente dalla presenza di nemici\n");
     printf("Bicicletta: uso in combattimento = evadi un attacco, viene distrutta\n");
     printf("Maglietta fuocoinferno = aumenta la difesa psichica di 10 punti \n");
-    printf("Bussola = ti dice in quale zona si trova il demotorzone, non viene consumata\n");
-    printf("Schitarrata metallica = aumenta l'attacco psichico di 5 punti \n");
+    printf("Bussola = ti dice in quale zona si trova il demotorzone\n");
+    printf("Schitarrata metallica = aumenta l'attacco psichico di 5 punti\n");
 }
 
 static void raccogli_oggetto(Giocatore *player) // Fatto
@@ -1425,7 +1432,6 @@ static void utilizza_oggetto(Giocatore *player) // Fatto
         printf("Zaino:\n");
         for (int c = 0; c < capienzaZaino && player->zaino[c] != nessun_oggetto; c++)
         {
-
             if (player->zaino[c] != nessun_oggetto)
             {
                 printf("%d)%s\n", c + 1, oggetto_toString(player->zaino[c]));
@@ -1456,7 +1462,7 @@ static void utilizza_oggetto(Giocatore *player) // Fatto
             rimuovi_oggetto(player->zaino, maglietta_fuocoinferno);
             break;
         case schitarrata_metallica:
-            player->attacco_psichico = player->attacco_psichico + 10;
+            player->attacco_psichico = player->attacco_psichico + 5;
             printf("Hai usato la schitarrata metallica, ora il tuo attacco psichico è: %d\n", player->attacco_psichico);
             rimuovi_oggetto(player->zaino, schitarrata_metallica);
             break;
@@ -1530,8 +1536,8 @@ static void salva_vincitore(Giocatore *player)
 }
 void gioca()
 {
-    printf("Benvenunti in Occhinz \n");
-    printf("L'unico vincitore sarà colui che riuscirà a sconfiggere il Demotorzone!\n");
+    printf("--------------------------Benvenunti in Occhinz------------------------\n");
+    printf("L'unico vincitore sarà colui che riuscirà a sconfiggere il Demotorzone!\n\n");
     do
     {
         ordineTurno = calloc(numGiocatori, sizeof(int));
@@ -1566,7 +1572,7 @@ void gioca()
                 printf("6)Stampa zona corrente\n");
                 printf("7)Raccogli oggetto\n");
                 printf("8)Utilizza oggetto\n");
-                printf("9)Passa il turno\n");
+                printf("9)Passa il turno\n\n");
 
                 do
                 {
@@ -1587,14 +1593,17 @@ void gioca()
                     if (azione)
                     {
                         avanza(&giocatori[ordineTurno[c]], &azione);
+                        
                     }
                     else
                     {
                         printf("Ti sei già mosso in questo turno\n");
                     }
+                    printf("\n");
                     break;
                 case 2:
                     indietreggia(&giocatori[ordineTurno[c]]);
+                    printf("\n");
                     break;
                 case 3:
                     if (azione)
@@ -1605,16 +1614,19 @@ void gioca()
                     {
                         printf("Ti sei già mosso in questo turno\n");
                     }
-
+                    printf("\n");
                     break;
                 case 4:
                     combatti(&giocatori[ordineTurno[c]]);
+                    printf("\n");
                     break;
                 case 5:
                     stampa_statistiche(&giocatori[ordineTurno[c]]);
+                    printf("\n");
                     break;
                 case 6:
                     stampa_zona_corrente(&giocatori[ordineTurno[c]]);
+                    printf("\n");
                     break;
                 case 7:
                     if (giocatori[ordineTurno[c]].mondo == 0)
@@ -1639,10 +1651,11 @@ void gioca()
                     {
                         printf("Non ci sono oggetti nel soprasotto\n");
                     }
-
+                    printf("\n");
                     break;
                 case 8:
                     utilizza_oggetto(&giocatori[ordineTurno[c]]);
+                    printf("\n");
                     break;
                 case 9:
                     passaTurno = 1;
@@ -1665,7 +1678,7 @@ void gioca()
         }
         if (numGiocatori == 0)
         {
-            printf("Tutti i giocatori sono stati sconfitti, il caos trionfa!\n");
+            printf("\nTutti i giocatori sono stati sconfitti, il caos trionfa!\n");
             break;
         }
 
@@ -1675,7 +1688,6 @@ void gioca()
     free(giocatori);
     cancella_mappa();
 }
-
 void termina_gioco()
 {
     printf("Grazie per aver giocato a Cosestrane!\n");
