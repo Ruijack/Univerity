@@ -818,6 +818,10 @@ void imposta_gioco() // Fatto
         giocatori[i].attacco_psichico = giocatore_lancia_D20();
         giocatori[i].difesa_psichica = giocatore_lancia_D20();
         giocatori[i].fortuna = giocatore_lancia_D20();
+        for (int y = 0; y < capienzaZaino; y++)
+        {
+            giocatori[i].zaino[y] = nessun_oggetto;
+        }
 
         giocatori[i].mondo = 0; // Tutti spawnano nel mondo reale
 
@@ -880,14 +884,27 @@ static int pZona_toNumZona(Mondoreale *pZona) // prima zona = 1
 static int possiede_bici(oggetto zaino[])
 {
     int possiedeBici = 0;
-    for (int i = 0; i < capienzaZaino && possiedeBici == 0; i++)
+    for (int i = 0; i < capienzaZaino; i++)
     {
         if (zaino[i] == bicicletta)
         {
             possiedeBici = 1;
+            break;
         }
     }
     return possiedeBici;
+}
+static int num_oggetti(oggetto zaino[]) // Ritorna quanti oggetti ha uno zaino
+{
+    int numOggetti = 0;
+    for (int i = 0; i < capienzaZaino; i++)
+    {
+        if (zaino[i] != nessun_oggetto)
+        {
+            numOggetti++;
+        }
+    }
+    return numOggetti;
 }
 static void rimuovi_giocatore(Giocatore *player)
 {
@@ -985,18 +1002,21 @@ static void avanza(Giocatore *player, int *azione) // Fatto
 static void indietreggia(Giocatore *player) // Fatto
 {
     int esisteNemico = 0;
-    if (player->mondo == 0)
+    if (!possiede_bici(player->zaino))
     {
-        if (player->pos_mondoreale->nemico != 0)
+        if (player->mondo == 0)
         {
-            esisteNemico = 1;
+            if (player->pos_mondoreale->nemico != nessun_nemico)
+            {
+                esisteNemico = 1;
+            }
         }
-    }
-    else
-    {
-        if (player->pos_soprasotto->nemico != 0)
+        else
         {
-            esisteNemico = 1;
+            if (player->pos_soprasotto->nemico != nessun_nemico)
+            {
+                esisteNemico = 1;
+            }
         }
     }
 
@@ -1078,7 +1098,6 @@ static void combattimento(Giocatore *player, nemico tipoNemico)
             {
                 esisteDemotorzone = 0;
                 tipiNemici = 4;
-                salva_vincitore(player);
                 break;
             }
             else
@@ -1371,16 +1390,16 @@ static void stampa_statistiche(Giocatore *player) // Fatto
     {
         strcat(zaino, "Nessun oggetto");
     }
-    printf("%s\n\n", zaino);
-    // printf("Caratteristica oggetti\n");
-    // printf("Bicicletta: passiva = puoi muoverti indipendetemente dalla presenza di nemici\n");
-    // printf("Bicicletta: uso in combattimento = evadi un attacco, viene distrutta\n");
-    // printf("Maglietta fuocoinferno = aumenta la difesa psichica di 10 punti \n");
-    // printf("Bussola = ti dice in quale zona si trova il demotorzone\n");
-    // printf("Schitarrata metallica = aumenta l'attacco psichico di 5 punti\n");
+    printf("%s\n", zaino);
 }
 static void raccogli_oggetto(Giocatore *player) // Fatto
 {
+    if (num_oggetti(player->zaino) == capienzaZaino)
+    {
+        printf("Hai lo zaino pieno!\n");
+        return;
+    }
+
     oggetto item = player->pos_mondoreale->oggetto;
     int postoVuoto = -1;
     for (int c = 0; c < sizeof(player->zaino) && postoVuoto == -1; c++)
@@ -1391,28 +1410,9 @@ static void raccogli_oggetto(Giocatore *player) // Fatto
         }
     }
 
-    if (postoVuoto == -1)
-    {
-        printf("Hai lo zaino pieno!\n");
-    }
-    else
-    {
-        printf("Hai raccolto un oggetto: %s\n", oggetto_toString(item));
-        player->pos_mondoreale->oggetto = nessun_oggetto;
-        player->zaino[postoVuoto] = item;
-    }
-}
-static int num_oggetti(oggetto zaino[])
-{
-    int numOggetti = 0;
-    for (int i = 0; i < capienzaZaino; i++)
-    {
-        if (zaino[i] != nessun_oggetto)
-        {
-            numOggetti++;
-        }
-    }
-    return numOggetti;
+    printf("Hai raccolto un oggetto: %s\n", oggetto_toString(item));
+    player->pos_mondoreale->oggetto = nessun_oggetto;
+    player->zaino[postoVuoto] = item;
 }
 static void rimuovi_oggetto(oggetto zaino[], oggetto itemUsato)
 {
@@ -1448,10 +1448,35 @@ static void utilizza_oggetto(Giocatore *player) // Fatto
         {
             if (player->zaino[c] != nessun_oggetto)
             {
-                printf("%d)%s\n", c + 1, oggetto_toString(player->zaino[c]));
+                printf("%d)%s", c + 1, oggetto_toString(player->zaino[c]));
+            }
+            // printf("Caratteristica oggetti\n");
+
+            // printf("Bussola = ");
+            // printf("Schitarrata metallica = aumenta l'attacco psichico di 5 punti\n");
+            switch (player->zaino[c])
+            {
+            case bicicletta:
+                printf("\npassiva = puoi muoverti indipendetemente dalla presenza di nemici\n");
+                printf("uso in combattimento = evadi un attacco, viene distrutta\n");
+                printf("\n");
+                break;
+            case maglietta_fuocoinferno:
+                printf(", aumenta la difesa psichica di 10 punti\n");
+                printf("\n");
+                break;
+            case bussola:
+                printf(", rivela in quale zona si trova il demotorzone\n");
+                printf("\n");
+                break;
+            case schitarrata_metallica:
+                printf(", aumenta l'attacco psichico di 5 punti\n");
+                printf("\n");
+                break;
+            default:
+                break;
             }
         }
-
         char sceltaOggetto[4];
         int sceltaOggettoInt;
         do
@@ -1472,12 +1497,12 @@ static void utilizza_oggetto(Giocatore *player) // Fatto
             break;
         case maglietta_fuocoinferno:
             player->difesa_psichica = player->difesa_psichica + 10;
-            printf("Hai usato la maglietta fuoco inferno, ora la tua difesa psichica è: %d\n", player->difesa_psichica);
+            printf("Hai usato la maglietta fuoco inferno, la tua difesa psichica è: %d\n", player->difesa_psichica);
             rimuovi_oggetto(player->zaino, maglietta_fuocoinferno);
             break;
         case schitarrata_metallica:
             player->attacco_psichico = player->attacco_psichico + 5;
-            printf("Hai usato la schitarrata metallica, ora il tuo attacco psichico è: %d\n", player->attacco_psichico);
+            printf("Hai usato la schitarrata metallica, il tuo attacco psichico è: %d\n", player->attacco_psichico);
             rimuovi_oggetto(player->zaino, schitarrata_metallica);
             break;
         case bussola:
@@ -1512,7 +1537,7 @@ static void salva_vincitore(Giocatore *player)
 
     Vincitore *nuovoVincitore = (Vincitore *)malloc(sizeof(Vincitore));
     char sceltaNick[2], nick[50];
-    printf("Vuoi inserire un nickname per la classifica? (y/n): ");
+    printf("%s vuoi inserire un nickname per la classifica? (y/n): ", player->nome);
     do
     {
         fgets(sceltaNick, sizeof(sceltaNick), stdin);
@@ -1557,21 +1582,17 @@ void gioca()
         free(ordineTurno);
         ordineTurno = calloc(numGiocatori, sizeof(int));
         genera_ordine_turno();
-        if (numTurno > 1)
-        {
-            printf("Nuovo ");
-        }
-        printf("turno %d\n", numTurno);
-        printf("Ordine: ");
-        printf("%s ", giocatori[ordineTurno[0]].nome);
+        printf("Turno %d\n", numTurno);
+
         if (numGiocatori > 1)
         {
+            printf("Ordine: ");
+            printf("%s ", giocatori[ordineTurno[0]].nome);
             for (int i = 1; i < numGiocatori; i++)
             {
                 printf("-> %s ", giocatori[ordineTurno[i]].nome);
             }
         }
-        printf("\n");
 
         for (int c = 0; c < numGiocatori && numGiocatori > 0 && esisteDemotorzone; c++)
         {
@@ -1620,11 +1641,9 @@ void gioca()
                     {
                         printf("Ti sei già mosso in questo turno\n");
                     }
-                    printf("\n");
                     break;
                 case 2:
                     indietreggia(&giocatori[ordineTurno[c]]);
-                    printf("\n");
                     break;
                 case 3:
                     if (azione)
@@ -1635,19 +1654,15 @@ void gioca()
                     {
                         printf("Ti sei già mosso in questo turno\n");
                     }
-                    printf("\n");
                     break;
                 case 4:
                     combatti(&giocatori[ordineTurno[c]]);
-                    printf("\n");
                     break;
                 case 5:
                     stampa_statistiche(&giocatori[ordineTurno[c]]);
-                    printf("\n");
                     break;
                 case 6:
                     stampa_zona_corrente(&giocatori[ordineTurno[c]]);
-                    printf("\n");
                     break;
                 case 7:
                     if (giocatori[ordineTurno[c]].mondo == 0)
@@ -1665,18 +1680,16 @@ void gioca()
                         }
                         else
                         {
-                            printf("Sconfiggi prima il nemico per raccogliere l'oggeto\n");
+                            printf("Sconfiggi prima il nemico per raccogliere l'oggetto\n");
                         }
                     }
                     else
                     {
                         printf("Non ci sono oggetti nel soprasotto\n");
                     }
-                    printf("\n");
                     break;
                 case 8:
                     utilizza_oggetto(&giocatori[ordineTurno[c]]);
-                    printf("\n");
                     break;
                 case 9:
                     passaTurno = 1;
@@ -1686,6 +1699,7 @@ void gioca()
                 if (!esisteDemotorzone)
                 {
                     printf("Congratulazioni %s, hai sconfitto il Demotorzone! Hai vinto!\n", giocatori[ordineTurno[c]].nome);
+                    salva_vincitore(&giocatori[ordineTurno[c]]);
                     break;
                 }
             } while (!passaTurno && numGiocatori > 0 && esisteDemotorzone);
@@ -1711,6 +1725,7 @@ void gioca()
     ordineTurno = NULL;
     free(ordineTurno);
 }
+
 void termina_gioco()
 {
     printf("Grazie per aver giocato a Cosestrane!\n");
